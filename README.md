@@ -1,7 +1,8 @@
 # buiemenu
 
 A pie-menu launcher on [BUI](https://github.com/ppmpreetham/BUI)'s Python binding
-(Blender's pie menu and widgets). Press a hotkey, pick from a pie, or type to
+(Blender's pie menu and widgets), shown in a frameless, translucent Qt window.
+Press a hotkey, pick from a pie, or type to
 fuzzy-search every command and installed app.
 
 ## Use
@@ -31,5 +32,6 @@ is a Blender icon name. Bad items are rejected at load.
 - [x] BUI pie with nested sub-pies and a Back slot
 - [x] Type-to-search while the pie is open, Return runs the top hit
 - [ ] BUI pie: drag-release pick and hotkey-release pick (Blender has both; BUI picks on click only)
-- [ ] Window at the pointer, borderless (BUI host)
+- [x] Frameless translucent window (Qt host, alpha matted from BUI's raster)
+- [x] Window at the pointer on X11, centred on Wayland
 - [ ] Daemon mode for instant open

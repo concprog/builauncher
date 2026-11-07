@@ -40,7 +40,7 @@ class Launcher:
         self._found: list[Entry] = []
         self.field = QueryField(self._query, self._submit)
         # fixed pool: a query changes text and visibility, it does not make nodes
-        self._rows = [Button("", lambda i=i: self._launch(self._found[i][1]), emboss=False, visible=False)
+        self._rows = [Button("", lambda i=i: self._launch(self._found[i][1]), visible=False)
                       for i in range(ROWS)]
         u = buipy.kit_unit()
         self._center = (WIDTH * u // 2, SEARCH_HEIGHT * u + PIE_HEIGHT * u // 2)
@@ -49,6 +49,12 @@ class Launcher:
         self.app = App("buiemenu", self.size, self.field, Column(*self._rows, spacing=0))
         self.app.bind("Tab", self.open_pie)
         self.app.bind("Escape", quit)
+
+    def opaque(self) -> list[tuple[int, int, int, int]]:
+        """Rects (x, y, w, h) that BUI fills: the search row, the result rows, the pie items."""
+        shown = (row.rect for row in self._rows[:len(self._found)])
+        pie = (rect for _, rect in self.app.ctx.menu_rows(-1)) if self.app.ctx.popup_count() else ()
+        return [self.field.rect, *shown, *pie]
 
     def open_pie(self, menu: Menu | None = None, parent: Menu | None = None) -> None:
         menu = menu or self._menu
@@ -68,7 +74,7 @@ class Launcher:
         self._found = search(text, self._entries, key=lambda e: e[1].name, limit=ROWS) if text else []
         for row, entry in zip(self._rows, self._found + [None] * (ROWS - len(self._found))):
             row.set("visible", entry is not None)
-            row.set("text", f"{entry[1].name}   · {entry[0]}" if entry else "")
+            row.set("text", (f"{entry[1].name}   · {entry[0]}" if entry[0] else entry[1].name) if entry else "")
             row.set("icon", entry[1].icon if entry and entry[0] != "App" else "")
         self.app.ctx.close_popups()
 
