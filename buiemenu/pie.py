@@ -65,8 +65,11 @@ class Pie:
         i = nearest(a, angles)
         return BACK if i == len(lv.menu.items) else i
 
-    def select(self, p: Point, at_pointer: bool) -> Action | None:
-        """Select the slot under p. A submenu opens at p (gesture) or at its slot (click)."""
+    def select(self, p: Point, at_pointer: bool, submenu_only: bool = False) -> Action | None:
+        """Select the slot under p. A submenu opens at p (gesture) or at its slot (click).
+
+        submenu_only: a gesture opens submenus but does not run actions.
+        """
         match self.hit(p):
             case None:
                 return None
@@ -77,7 +80,7 @@ class Pie:
             case i:
                 item: Item = self.level.menu.items[i]
                 if isinstance(item, Action):
-                    return item
+                    return None if submenu_only else item
                 a = self.angles()[i]
                 center = p if at_pointer else offset(self.level.center, a, self.radius)
                 self.stack.append(Level(item, center, (a + 180) % 360))
