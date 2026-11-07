@@ -37,3 +37,8 @@ def test_desktop_entry(tmp_path):
     assert read_entry(f) == Action("Foo", "foo --x", "foo")
     f.write_text("[Desktop Entry]\nType=Application\nName=Foo\nExec=foo\nNoDisplay=true\n")
     assert read_entry(f) is None
+
+
+def test_submenu_fits_pie():
+    with pytest.raises(ValueError):
+        parse({"name": "m", "item": [{"name": str(i), "exec": "x"} for i in range(9)]})

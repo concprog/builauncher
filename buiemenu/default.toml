@@ -1,62 +1,58 @@
 # Copy to ~/.config/buiemenu/menu.toml and edit.
-# An item has either `exec` (a command) or `[[...item]]` children (a submenu).
-# `icon` is a freedesktop icon theme name.
+# An item has either `exec` (a command) or 1 to 8 `[[...item]]` children (a sub-pie).
+# `icon` is a Blender icon name (CONSOLE, FILE_FOLDER, PLAY, ...).
 apps = true  # also search installed .desktop apps
-
-[theme]
-accent = "#89b4fa"
-radius = 130
 
 [[item]]
 name = "Terminal"
-icon = "utilities-terminal"
+icon = "CONSOLE"
 exec = "konsole"
 
 [[item]]
 name = "Browser"
-icon = "web-browser"
+icon = "WORLD"
 exec = "xdg-open https://"
 
 [[item]]
 name = "Files"
-icon = "system-file-manager"
+icon = "FILE_FOLDER"
 exec = "xdg-open ."
 
 [[item]]
 name = "Media"
-icon = "applications-multimedia"
+icon = "SOUND"
   [[item.item]]
   name = "Play / Pause"
-  icon = "media-playback-start"
+  icon = "PLAY"
   exec = "playerctl play-pause"
   [[item.item]]
   name = "Next"
-  icon = "media-skip-forward"
+  icon = "FF"
   exec = "playerctl next"
   [[item.item]]
   name = "Previous"
-  icon = "media-skip-backward"
+  icon = "REW"
   exec = "playerctl previous"
 
 [[item]]
 name = "System"
-icon = "preferences-system"
+icon = "PREFERENCES"
   [[item.item]]
   name = "Lock"
-  icon = "system-lock-screen"
+  icon = "LOCKED"
   exec = "loginctl lock-session"
   [[item.item]]
   name = "Suspend"
-  icon = "system-suspend"
+  icon = "SORTTIME"
   exec = "systemctl suspend"
   [[item.item]]
   name = "Power"
-  icon = "system-shutdown"
+  icon = "QUIT"
     [[item.item.item]]
     name = "Reboot"
-    icon = "system-reboot"
+    icon = "FILE_REFRESH"
     exec = "systemctl reboot"
     [[item.item.item]]
     name = "Shut down"
-    icon = "system-shutdown"
+    icon = "QUIT"
     exec = "systemctl poweroff"
