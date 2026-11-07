@@ -5,6 +5,7 @@ parent, Escape closes, and typing at any time searches every command.
 """
 from collections.abc import Callable
 
+import buipy
 from bui.components import App, Button, Column, MenuItem, PieMenu, SearchField
 from bui.components.core import EV_SUBMIT
 
@@ -13,6 +14,8 @@ from .fuzzy import search
 from .menu import Action, Menu
 
 ROWS = 8
+# window in kit units: the search row, then the pie (radius 5 units, items about 6 wide)
+WIDTH, SEARCH_HEIGHT, PIE_HEIGHT = 24, 2, 15
 Entry = tuple[str, Action]  # (menu path or "App", action)
 
 
@@ -39,14 +42,20 @@ class Launcher:
         # fixed pool: a query changes text and visibility, it does not make nodes
         self._rows = [Button("", lambda i=i: self._launch(self._found[i][1]), emboss=False, visible=False)
                       for i in range(ROWS)]
-        self.app = App("buiemenu", (520, 360), self.field, Column(*self._rows, spacing=0))
+        u = buipy.kit_unit()
+        self._center = (WIDTH * u // 2, SEARCH_HEIGHT * u + PIE_HEIGHT * u // 2)
+        self.size = (WIDTH * u, (SEARCH_HEIGHT + PIE_HEIGHT) * u)
+        # results take the pie's place while searching
+        self.app = App("buiemenu", self.size, self.field, Column(*self._rows, spacing=0))
         self.app.bind("Tab", self.open_pie)
         self.app.bind("Escape", quit)
 
     def open_pie(self, menu: Menu | None = None, parent: Menu | None = None) -> None:
         menu = menu or self._menu
         back = [MenuItem("Back", lambda: self.open_pie(parent), icon="BACK")] if parent else []
-        PieMenu.show(self.app.ctx, [*back, *map(lambda i: self._pie_item(i, menu), menu.items)], menu.name)
+        self.app.ctx.set_pointer(*self._center)  # a pie opens at the pointer: keep it inside the window
+        PieMenu.show(self.app.ctx, [*back, *(self._pie_item(i, menu) for i in menu.items)],
+                     menu.name if parent else "")
 
     def _pie_item(self, item: Action | Menu, menu: Menu) -> MenuItem:
         match item:
