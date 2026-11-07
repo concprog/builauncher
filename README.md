@@ -1,6 +1,6 @@
 # buiemenu
 
-A pie-menu launcher on [BUI](https://github.com/nusaturn/BUI)'s Python binding
+A pie-menu launcher on [BUI](https://github.com/ppmpreetham/BUI)'s Python binding
 (Blender's pie menu and widgets). Press a hotkey, pick from a pie, or type to
 fuzzy-search every command and installed app.
 
