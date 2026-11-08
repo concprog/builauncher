@@ -1,4 +1,8 @@
-"""Frameless, translucent Qt window that shows a BUI context.
+"""Frameless, translucent Qt window that shows a BUI context under the pointer.
+
+On Wayland no app may place its window or ask for the pointer, so the window covers the
+screen (a layer surface if Qt has the layer-shell plugin, else a full-screen window) and
+draws the menu where the pointer enters it. On X11 and Windows it moves to the pointer.
 
 BUI draws into an opaque raster over the region background. This window
 makes that background clear again, with no change to BUI:
@@ -36,10 +40,11 @@ FRAME_MS = 16
 HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
 DRAG_PX = 15  # Kando's drag threshold
 FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # Kando's fade durations; also between pie and search
-# LayerShellQt::Window: no anchors (compositor centres it), overlay layer, exclusive keyboard
+ENTER_WAIT_MS = 150  # Wayland: no pointer enter by then (pointer not over the screen), centre it
+# LayerShellQt::Window: all four anchors (full screen), overlay layer, exclusive keyboard
 LAYER_SHELL = "libLayerShellQtInterface.so.6"
 LAYER_GET = "_ZN12LayerShellQt6Window3getEP7QWindow"
-LAYER = {"anchors": 0, "layer": 3, "keyboardInteractivity": 1}
+LAYER = {"anchors": 15, "layer": 3, "keyboardInteractivity": 1, "exclusionZone": -1}
 
 
 def background() -> int:
@@ -56,7 +61,7 @@ def layer_shell() -> bool:
 
 
 def layer_surface(widget: QWidget) -> None:
-    """Make a Wayland window a centred overlay layer surface. Call before show()."""
+    """Make a Wayland window a full-screen overlay layer surface. Call before show()."""
     get = getattr(ctypes.CDLL(LAYER_SHELL), LAYER_GET)
     get.restype, get.argtypes = ctypes.c_void_p, [ctypes.c_void_p]
     widget.winId()  # create the QWindow
@@ -94,8 +99,15 @@ class Overlay(QWidget):
         self._launcher, self._daemon, self._bg = launcher, daemon, background()
         self._image: tuple[np.ndarray, QImage] | None = None
         self._dpr = self.devicePixelRatioF()
-        w, h = launcher.size
-        self.resize(round(w / self._dpr), round(h / self._dpr))
+        self._wayland = QGuiApplication.platformName() == "wayland"
+        self._layer = self._wayland and layer_shell()
+        # top left of the menu in the window, in logical pixels. None: the pointer has not entered yet
+        self._origin: QPointF | None = QPointF(0, 0)
+        self._enter_wait = QTimer(self, singleShot=True, interval=ENTER_WAIT_MS,
+                                  timeout=lambda: self._put(self.rect().center().toPointF()))
+        if not self._wayland:
+            w, h = launcher.size
+            self.resize(round(w / self._dpr), round(h / self._dpr))
         # BUI timers, animations and focus changes: redraw when the context asks
         self._tick = QTimer(self, interval=FRAME_MS, timeout=self._refresh)
         self._shown_at = 0.0
@@ -103,7 +115,7 @@ class Overlay(QWidget):
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
         self._fade_at, self._fading_out, self._searching = 0.0, False, False
-        if QGuiApplication.platformName() == "wayland" and layer_shell():
+        if self._layer:
             layer_surface(self)
 
     def trigger(self) -> None:
@@ -119,7 +131,7 @@ class Overlay(QWidget):
         self._fade_at, self._fading_out = self._shown_at, False
         self._launcher.reset()
         self._place()
-        self.show()
+        self.showFullScreen() if self._wayland and not self._layer else self.show()
         self.activateWindow()
 
     def dismiss(self) -> None:
@@ -139,10 +151,20 @@ class Overlay(QWidget):
         t = min((time.monotonic() - self._fade_at) / (FADE_OUT_S if self._fading_out else FADE_IN_S), 1.0)
         return 1 - t * t if self._fading_out else 1 - (1 - t) ** 2
 
+    def _put(self, pointer: QPointF) -> None:
+        """Wayland: centre the menu on pointer, kept inside the window."""
+        if self._origin is None:
+            w, h = (v / self._dpr for v in self._launcher.size)
+            self._origin = QPointF(min(max(pointer.x() - w / 2, 0), max(self.width() - w, 0)),
+                                   min(max(pointer.y() - h / 2, 0), max(self.height() - h, 0)))
+            self._enter_wait.stop()
+            self.update()
+
     def _place(self) -> None:
-        """At the pointer on X11. On Wayland, the compositor centres the layer surface."""
-        if QGuiApplication.platformName() == "wayland":
-            return
+        """At the pointer on X11 and Windows. On Wayland, where the pointer enters the window."""
+        if self._wayland:
+            self._origin = None
+            return self._enter_wait.start()
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
         area, pos = screen.availableGeometry(), QCursor.pos()
         rect = QRect(0, 0, self.width(), self.height())
@@ -176,11 +198,17 @@ class Overlay(QWidget):
         self._image = (px, image)  # QImage borrows px's memory
         painter = QPainter(self)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-        painter.drawImage(QPointF(0, 0), image)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        if self._origin is not None:
+            painter.drawImage(self._origin, image)
         painter.end()
 
+    def enterEvent(self, e) -> None:  # noqa: N802
+        self._put(e.position())
+
     def _at(self, e: QMouseEvent) -> tuple[int, int]:
-        p = e.position() * self._dpr
+        self._put(e.position())  # a motion with no enter before it
+        p = (e.position() - self._origin) * self._dpr
         return round(p.x()), round(p.y())
 
     def _mods(self, e) -> int:
