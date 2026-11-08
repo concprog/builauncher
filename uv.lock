@@ -28,15 +28,10 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "blenderui" },
+    { name = "jeepney", marker = "sys_platform == 'linux'" },
     { name = "numpy" },
-    { name = "pyside6", marker = "sys_platform == 'win32'" },
-    { name = "rapidfuzz" },
-]
-
-[package.optional-dependencies]
-wheels = [
-    { name = "pygobject", marker = "sys_platform == 'linux'" },
     { name = "pyside6" },
+    { name = "rapidfuzz" },
 ]
 
 [package.dev-dependencies]
@@ -47,13 +42,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "blenderui", specifier = ">=0.4.1" },
+    { name = "jeepney", marker = "sys_platform == 'linux'", specifier = ">=0.8" },
     { name = "numpy" },
-    { name = "pygobject", marker = "sys_platform == 'linux' and extra == 'wheels'" },
-    { name = "pyside6", marker = "sys_platform == 'win32'", specifier = ">=6.6" },
-    { name = "pyside6", marker = "extra == 'wheels'", specifier = ">=6.6" },
+    { name = "pyside6", specifier = ">=6.6" },
     { name = "rapidfuzz", specifier = ">=3" },
 ]
-provides-extras = ["wheels"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest" }]
@@ -74,6 +67,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/01/e1/2069291243c926a2ff1cd706c7f3eeb9b62144bf60f77c9fb9ff2fb26bd3/iniconfig-2.3.1.tar.gz", hash = "sha256:67f4b9c50da0dedf52af349e7749a80a9057a5031199791b906c3bb3ae878960", size = 21209, upload-time = "2026-10-06T22:48:38.076Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/43/4ca9e49d27a1fcf6bece6f6aec0ea46bb9112489b93d4b688fb415457bdb/iniconfig-2.3.1-py3-none-any.whl", hash = "sha256:9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7", size = 7552, upload-time = "2026-10-06T22:48:36.959Z" },
+]
+
+[[package]]
+name = "jeepney"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/6f/357efd7602486741aa73ffc0617fb310a29b588ed0fd69c2399acbb85b0c/jeepney-0.9.0.tar.gz", hash = "sha256:cf0e9e845622b81e4a28df94c40345400256ec608d0e55bb8a3feaa9163f5732", size = 106758, upload-time = "2025-02-27T18:51:01.684Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b2/a3/e137168c9c44d18eff0376253da9f1e9234d0239e0ee230d2fee6cea8e55/jeepney-0.9.0-py3-none-any.whl", hash = "sha256:97e5714520c16fc0a45695e5365a2e11b81ea79bba796e26f9f1d178cb182683", size = 49010, upload-time = "2025-02-27T18:51:00.104Z" },
 ]
 
 [[package]]
@@ -168,12 +170,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pycairo"
-version = "1.29.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bb/5e/19ab2572981a996ce96b853a189d2dcced40506b67d9555a7568457abcf2/pycairo-1.29.2.tar.gz", hash = "sha256:3e69fff74fe64f5ba2dfa31f67c6bdf26413342574047437d2ac520d35e9a489", size = 666308, upload-time = "2026-10-04T19:11:03.81Z" }
-
-[[package]]
 name = "pygments"
 version = "2.21.0"
 source = { registry = "https://pypi.org/simple" }
@@ -181,15 +177,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
 ]
-
-[[package]]
-name = "pygobject"
-version = "3.58.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pycairo" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/65/1e/d590f82e14db75945b03f6b63e0f19662e0340babd8f574fdb1bb5a015e2/pygobject-3.58.1.tar.gz", hash = "sha256:4c80598ade17fbaa7798e01a25d0bf29ce109740786026a074c5c62bb3e79d23", size = 1408671, upload-time = "2026-10-09T11:29:48.929Z" }
 
 [[package]]
 name = "pyside6"
