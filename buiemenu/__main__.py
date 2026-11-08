@@ -1,4 +1,5 @@
 """Bind `python -m buiemenu [menu.toml]` to a hotkey."""
+import os
 import sys
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from .window import Overlay
 
 
 def main() -> int:
+    # wayland: a layer surface has no frame, no tiling, and stays above windows
+    os.environ.setdefault("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell")
     qt = QApplication(sys.argv[:1])
     cfg = load(Path(sys.argv[1]) if len(sys.argv) > 1 else None)
     entries = [*actions(cfg.menu), *(("App", a) for a in (apps() if cfg.apps else ()))]

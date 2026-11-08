@@ -33,5 +33,5 @@ is a Blender icon name. Bad items are rejected at load.
 - [x] Type-to-search while the pie is open, Return runs the top hit
 - [ ] BUI pie: drag-release pick and hotkey-release pick (Blender has both; BUI picks on click only)
 - [x] Frameless translucent window (Qt host, alpha matted from BUI's raster)
-- [x] Window at the pointer on X11, centred on Wayland
+- [x] Window at the pointer on X11; on Wayland a centred, borderless layer-shell overlay (needs layer-shell-qt)
 - [ ] Daemon mode for instant open
