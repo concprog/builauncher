@@ -8,12 +8,26 @@ fuzzy-search every command and installed app.
 ## Use
 
     pip install blenderui      # or: BUIPY_BUILD_DIR=<BUI>/build/bindings/python PYTHONPATH=<BUI>/bindings/python
-    buiemenu --daemon [menu.toml] &   # once per session (autostart)
-    buiemenu                          # bind this to a hotkey
+    buiemenu install           # autostart and app entry; `buiemenu uninstall` removes them
+    buiemenu --daemon &        # this session only; later sessions start it by themselves
 
-`buiemenu` sends a trigger to the daemon over `$XDG_RUNTIME_DIR/buiemenu.sock`.
-It does not load Qt, so it takes about 60 ms. With no daemon, it opens the menu
-once and exits when the menu closes.
+`install` writes two freedesktop.org entries, so any XDG desktop reads them:
+
+- `~/.config/autostart/io.github.buiemenu.desktop` starts `buiemenu --daemon` at login.
+- `~/.local/share/applications/io.github.buiemenu.desktop` (hidden) gives the app id.
+
+The daemon binds its own global shortcut through the
+[XDG GlobalShortcuts portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html)
+(KDE Plasma, GNOME 48 and later, Hyprland). It asks for `shortcut` from the config,
+`Ctrl+Alt+Space` by default, at the first start. The desktop may ask you to confirm it.
+After that, change it in the desktop's shortcut settings. The portal sends press and
+release, so the hold gesture is exact.
+
+Without the portal (for example on sway), the daemon prints a note. Bind the
+command `buiemenu` to a key in your compositor. It sends a trigger over
+`$XDG_RUNTIME_DIR/buiemenu.sock` in about 80 ms, or opens the menu once if no daemon
+runs. Compositors that do not run XDG autostart (sway, Hyprland) need `buiemenu --daemon`
+in their own startup config, or `dex -a`.
 
 Gestures (from Kando and Blender's pie):
 
@@ -55,6 +69,7 @@ that would let buiemenu use buipy alone.
 - [x] Frameless translucent window (Qt host, alpha matted from BUI's raster)
 - [x] Window at the pointer on X11; on Wayland a centred, borderless layer-shell overlay
 - [x] Daemon with a fast trigger client
+- [x] `buiemenu install`: XDG autostart, and a global shortcut from the portal
 - [x] Gestures: hold and release, double tap, drag pick, centre back, dismissal
 - [ ] Up and Down through results while typing (BUI's field takes those keys)
 - [ ] Drop Qt when BUI has the features in docs/bui-gaps.md
