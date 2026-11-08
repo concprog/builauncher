@@ -7,19 +7,22 @@ fuzzy-search every command and installed app.
 
 ## Use
 
-    uv venv --system-site-packages   # use the distro's PySide6 and PyGObject
-    uv sync                          # blenderui (BUI) and numpy from PyPI
-    uv run builauncher install       # autostart and app entry; `uninstall` removes them
-    uv run builauncher --daemon &    # this session only; later sessions start it by themselves
+    pip install .                    # or: pipx install --system-site-packages .
+    builauncher install              # autostart and app entry; `builauncher uninstall` removes them
+    builauncher daemon &             # this session only; later sessions start it by themselves
+    builauncher                      # open the menu (same as `builauncher open`)
+
+`builauncher --help` lists the commands. `open` and `daemon` take `--config TOML`.
+
+For development: `uv venv --system-site-packages`, `uv sync`, `uv run pytest`, `uv build`.
 
 Distro packages: `python3-pyside6`, `python3-gobject` and `layer-shell-qt` (Fedora names).
-Without the first two, `uv sync --extra wheels` gets them from PyPI; PyGObject then
+Without the first two, `pip install .[wheels]` gets them from PyPI; PyGObject then
 builds from source and needs the gobject-introspection and cairo headers.
-`uv build` makes the wheel, and `uv run pytest` runs the tests.
 
 `install` writes two freedesktop.org entries, so any XDG desktop reads them:
 
-- `~/.config/autostart/io.github.builauncher.desktop` starts `builauncher --daemon` at login.
+- `~/.config/autostart/io.github.builauncher.desktop` starts `builauncher daemon` at login.
 - `~/.local/share/applications/io.github.builauncher.desktop` (hidden) gives the app id.
 
 The daemon binds its own global shortcut through the
@@ -32,7 +35,7 @@ release, so the hold gesture is exact.
 Without the portal (for example on sway), the daemon prints a note. Bind the
 command `builauncher` to a key in your compositor. It sends a trigger over
 `$XDG_RUNTIME_DIR/builauncher.sock` in about 80 ms, or opens the menu once if no daemon
-runs. Compositors that do not run XDG autostart (sway, Hyprland) need `builauncher --daemon`
+runs. Compositors that do not run XDG autostart (sway, Hyprland) need `builauncher daemon`
 in their own startup config, or `dex -a`.
 
 Gestures (from Kando and Blender's pie):
