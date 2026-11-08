@@ -6,13 +6,15 @@ makes that background clear again, with no change to BUI:
   - elsewhere a pixel is the background, maybe under a black shadow, so a grey
     pixel at or below the background gets alpha 1 - v / background.
 """
+import ctypes
 from collections.abc import Callable, Iterable
 
 import buipy
 import numpy as np
-from PySide6.QtCore import QPointF, QRect, Qt, QTimer
+from PySide6.QtCore import QObject, QPointF, QRect, Qt, QTimer
 from PySide6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QMouseEvent, QPainter
 from PySide6.QtWidgets import QWidget
+from shiboken6 import getCppPointer, wrapInstance
 
 from bui.components import App
 
@@ -28,6 +30,10 @@ KEYSYMS = {
 MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModifier, 2),
         (Qt.KeyboardModifier.AltModifier, 4))
 FRAME_MS = 16
+# LayerShellQt::Window: no anchors (compositor centres it), overlay layer, exclusive keyboard
+LAYER_SHELL = "libLayerShellQtInterface.so.6"
+LAYER_GET = "_ZN12LayerShellQt6Window3getEP7QWindow"
+LAYER = {"anchors": 0, "layer": 3, "keyboardInteractivity": 1}
 
 
 def background() -> int:
@@ -35,6 +41,16 @@ def background() -> int:
     r, g, b, _ = buipy.kit_theme_color("region_bg")
     assert abs(r - g) < 1e-3 and abs(g - b) < 1e-3, "region background is not grey"
     return round(r * 255)
+
+
+def layer_surface(widget: QWidget) -> None:
+    """Make a Wayland window a centred overlay layer surface. Call before show()."""
+    get = getattr(ctypes.CDLL(LAYER_SHELL), LAYER_GET)
+    get.restype, get.argtypes = ctypes.c_void_p, [ctypes.c_void_p]
+    widget.winId()  # create the QWindow
+    surface = wrapInstance(get(getCppPointer(widget.windowHandle())[0]), QObject)
+    for name, value in LAYER.items():
+        assert surface.setProperty(name, value), name
 
 
 def matte(bgrx: bytes, w: int, h: int, opaque: Iterable[Rect], bg: int) -> np.ndarray:
@@ -65,7 +81,9 @@ class Overlay(QWidget):
         self._tick.start()
 
     def place(self) -> None:
-        """At the pointer when the platform tells it (X11), else centred on the screen."""
+        """At the pointer on X11. On Wayland, a centred layer surface."""
+        if QGuiApplication.platformName() == "wayland":
+            return layer_surface(self)
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
         area, pos = screen.availableGeometry(), QCursor.pos()
         centre = pos if area.contains(pos) and not pos.isNull() else area.center()
@@ -97,7 +115,8 @@ class Overlay(QWidget):
 
     def _mods(self, e) -> int:
         held = sum(bit for mod, bit in MODS if e.modifiers() & mod)
-        return held | (8 if getattr(e, "buttons", lambda: 0)() & Qt.MouseButton.LeftButton else 0)
+        left = isinstance(e, QMouseEvent) and bool(e.buttons() & Qt.MouseButton.LeftButton)
+        return held | (8 if left else 0)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:  # noqa: N802
         press = self._app.ctx.context_menu if e.button() == Qt.MouseButton.RightButton else self._app.ctx.press
