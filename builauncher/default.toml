@@ -1,12 +1,15 @@
 # Copy to ~/.config/builauncher/menu.toml and edit.
-# An item has one of: `exec` (a command), 1 to 8 `[[...item]]` children (a sub-pie),
-# or `places = true` (a sub-pie of home, documents, downloads, ... and the trash).
+# An item runs a command (`exec`) or opens a sub-pie (`pie = "name"`).
+# `[[pie.name]]` tables are that sub-pie's items: 1 to 7, as Back takes a slot.
+# `pie = "places"` is built in: home, documents, downloads, ... and the trash.
 # `icon` is a Blender icon name (CONSOLE, FILE_FOLDER, PLAY, ...).
 apps = true  # also search installed .desktop apps
 # global shortcut, asked of the desktop at the first daemon start (XDG GlobalShortcuts portal).
 # after that, change it in the desktop's shortcut settings.
 shortcut = "CTRL+ALT+space"
 scale = 1.0  # size of the pie and the search (BUI ui scale)
+
+# the top pie: 1 to 7 items, as Search takes a slot
 
 [[item]]
 name = "Terminal"
@@ -21,43 +24,56 @@ exec = "xdg-open https://"
 [[item]]
 name = "Files"
 icon = "FILE_FOLDER"
-places = true
+pie = "places"
 
 [[item]]
 name = "Media"
 icon = "SOUND"
-  [[item.item]]
-  name = "Play / Pause"
-  icon = "PLAY"
-  exec = "playerctl play-pause"
-  [[item.item]]
-  name = "Next"
-  icon = "FF"
-  exec = "playerctl next"
-  [[item.item]]
-  name = "Previous"
-  icon = "REW"
-  exec = "playerctl previous"
+pie = "media"
 
 [[item]]
 name = "System"
 icon = "PREFERENCES"
-  [[item.item]]
-  name = "Lock"
-  icon = "LOCKED"
-  exec = "loginctl lock-session"
-  [[item.item]]
-  name = "Suspend"
-  icon = "SORTTIME"
-  exec = "systemctl suspend"
-  [[item.item]]
-  name = "Power"
-  icon = "QUIT"
-    [[item.item.item]]
-    name = "Reboot"
-    icon = "FILE_REFRESH"
-    exec = "systemctl reboot"
-    [[item.item.item]]
-    name = "Shut down"
-    icon = "QUIT"
-    exec = "systemctl poweroff"
+pie = "system"
+
+# sub-pies
+
+[[pie.media]]
+name = "Play / Pause"
+icon = "PLAY"
+exec = "playerctl play-pause"
+
+[[pie.media]]
+name = "Next"
+icon = "FF"
+exec = "playerctl next"
+
+[[pie.media]]
+name = "Previous"
+icon = "REW"
+exec = "playerctl previous"
+
+[[pie.system]]
+name = "Lock"
+icon = "LOCKED"
+exec = "loginctl lock-session"
+
+[[pie.system]]
+name = "Suspend"
+icon = "SORTTIME"
+exec = "systemctl suspend"
+
+[[pie.system]]
+name = "Power"
+icon = "QUIT"
+pie = "power"
+
+[[pie.power]]
+name = "Reboot"
+icon = "FILE_REFRESH"
+exec = "systemctl reboot"
+
+[[pie.power]]
+name = "Shut down"
+icon = "QUIT"
+exec = "systemctl poweroff"

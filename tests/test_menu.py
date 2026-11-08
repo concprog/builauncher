@@ -17,10 +17,16 @@ def test_default_config_loads():
     assert "System / Power:Reboot" in paths
 
 
-@pytest.mark.parametrize("raw", [{"name": "x"}, {"exec": "a"}, {"name": "x", "exec": "a", "item": [{}]}])
+PIES = {"m": [{"name": "a", "exec": "a"}], "loop": [{"name": "l", "pie": "loop"}],
+        "full": [{"name": str(i), "exec": "x"} for i in range(8)]}
+
+
+@pytest.mark.parametrize("raw", [{"name": "x"}, {"exec": "a"}, {"name": "x", "exec": "a", "pie": "m"},
+                                 {"name": "x", "pie": "nope"}, {"name": "x", "pie": "loop"},
+                                 {"name": "x", "pie": "full"}])  # full: no slot left for Back
 def test_bad_items_rejected(raw):
     with pytest.raises(ValueError):
-        parse(raw)
+        parse(raw, PIES)
 
 
 def test_fuzzy_prefers_word_starts():
@@ -32,7 +38,8 @@ def test_fuzzy_prefers_word_starts():
 
 
 def test_action_parse():
-    assert parse({"name": "t", "exec": "konsole"}) == Action("t", "konsole")
+    assert parse({"name": "t", "exec": "konsole"}, {}) == Action("t", "konsole")
+    assert parse({"name": "s", "pie": "m"}, PIES).items == (Action("a", "a"),)
 
 
 def test_desktop_entry(tmp_path):
@@ -41,11 +48,6 @@ def test_desktop_entry(tmp_path):
     assert read_entry(f) == Action("Foo", "foo --x", "foo")
     f.write_text("[Desktop Entry]\nType=Application\nName=Foo\nExec=foo\nNoDisplay=true\n")
     assert read_entry(f) is None
-
-
-def test_submenu_fits_pie():
-    with pytest.raises(ValueError):
-        parse({"name": "m", "item": [{"name": str(i), "exec": "x"} for i in range(9)]})
 
 
 def test_flick_and_back():
@@ -75,7 +77,4 @@ def test_flick_and_back():
 def test_places_fit_a_sub_pie():
     found = places()
     assert found[-1].name == "Trash" and len(found) <= 7  # one slot for Back
-    files = parse({"name": "Files", "places": True}, found)
-    assert files.items == found
-    with pytest.raises(ValueError):
-        parse({"name": "Files", "places": True, "exec": "x"}, found)
+    assert parse({"name": "Files", "pie": "places"}, {"places": found}).items == found
