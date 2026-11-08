@@ -18,6 +18,19 @@ def test_default_config_loads():
     paths = {f"{p}:{a.name}" for p, a in actions(cfg.menu)}
     assert ":Terminal" in paths
     assert "System / Power:Reboot" in paths
+    assert cfg.dwell == 0.3
+
+
+def test_dwell_config(tmp_path):
+    f = tmp_path / "menu.toml"
+    f.write_text('[[item]]\nname = "t"\nexec = "t"\n')
+    assert load(f).dwell == 0.3  # no dwell in the file: the default
+    f.write_text('dwell = 0.5\n[[item]]\nname = "t"\nexec = "t"\n')  # a root key: before [[item]]
+    assert load(f).dwell == 0.5
+    for bad in ("0.04", "2.1", "-1"):
+        f.write_text(f'dwell = {bad}\n[[item]]\nname = "t"\nexec = "t"\n')
+        with pytest.raises(ValueError):
+            load(f)
 
 
 PIES = {"m": [{"name": "a", "exec": "a"}], "loop": [{"name": "l", "pie": "loop"}],
@@ -75,6 +88,29 @@ def test_flick_and_back():
         rows()
         launcher.flick(-100, 0)  # W: Search
         assert launcher.searching and not launcher.app.ctx.popup_count()
+
+
+def test_drag_pick():
+    closed, ran = [], []
+    with mock.patch("builauncher.launcher.run", ran.append):
+        launcher = Launcher(load(LINUX).menu, [], lambda: closed.append(1))
+        rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
+        launcher.reset()
+        launcher.app.render_raster(*launcher.size)
+        centre = lambda t: next((x + w // 2, y + h // 2) for s, (x, y, w, h) in
+                                launcher.app.ctx.menu_rows(-1) if s == t)
+        assert not launcher.drag_pick(*launcher._center)  # the centre is no item
+        assert not launcher.drag_pick(*centre("Search"))  # Search must not open from a drag
+        assert not launcher.drag_pick(*centre("Terminal"))  # an Action must not run from a drag
+        assert launcher.drag_pick(*centre("System"))  # a sub-pie may open from a drag
+        assert rows() == ["Search", "Terminal", "Browser", "Files", "Media", "System"]  # but only a dwell does
+        launcher.drag_pick(*centre("System"))()
+        assert rows() == ["Back", "Lock", "Suspend", "Power"]
+        launcher.drag_pick(*centre("Back"))()
+        assert rows()[0] == "Search"
+        launcher.search_only()
+        assert not launcher.drag_pick(*launcher._center)  # no pie in search mode: nothing to pick
+        assert not ran and not closed  # a drag pick never runs an Action nor closes
 
 
 def test_places_fit_a_sub_pie():

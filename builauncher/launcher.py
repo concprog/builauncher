@@ -41,6 +41,7 @@ class Launcher:
     def __init__(self, menu: Menu, entries: list[Entry], close: Callable[[], None]) -> None:
         self._menu, self._entries, self._close = menu, entries, close
         self._back: Callable[[], None] = close  # the centre and Back open the parent, or close at the root
+        self._drags: list[Callable[[], None] | None] = []  # per pie slot: the pick a drag dwell may make
         self._found: list[Entry] = []
         self.field = QueryField(self._query, self._submit)
         # Blender's UI list: icons, left-aligned names, the selected row lit; a click runs it
@@ -96,6 +97,14 @@ class Launcher:
         near = math.dist((x, y), self._center) < DEAD_ZONE * buipy.kit_unit()
         (self._back if near and self.app.ctx.popup_count() else self._close)()
 
+    def drag_pick(self, x: int, y: int) -> Callable[[], None] | None:
+        """The pick at (x, y) a drag dwell may make: a submenu or Back; None on an Action."""
+        if not self.app.ctx.popup_count():
+            return None
+        hit = zip(self.app.ctx.menu_rows(-1), self._drags)
+        return next((pick for (_, (rx, ry, rw, rh)), pick in hit
+                     if rx <= x < rx + rw and ry <= y < ry + rh), None)
+
     def open_pie(self, path: tuple[Menu, ...] = ()) -> None:
         """Open the last sub-menu in path, or the root when path is empty."""
         menu = path[-1] if path else self._menu
@@ -103,8 +112,13 @@ class Launcher:
         # slot 1 (W): Back in a sub-pie, Search at the root
         first = (MenuItem("Back", self._back, icon="BACK") if path
                  else MenuItem("Search", self.search_only, icon="VIEWZOOM"))
+        shown = [first, *(self._pie_item(i, path) for i in menu.items)]
+        # drag-through: a dwell may pick only a submenu or Back, never an Action nor Search
+        self._drags = [first.on_click if path else None]
+        self._drags += [item.on_click if isinstance(src, Menu) else None
+                        for src, item in zip(menu.items, shown[1:])]
         self.app.ctx.set_pointer(*self._center)  # a pie opens at the pointer: keep it inside the window
-        PieMenu.show(self.app.ctx, [first, *(self._pie_item(i, path) for i in menu.items)], menu.name if path else "")
+        PieMenu.show(self.app.ctx, shown, menu.name if path else "")
 
     def _pie_item(self, item: Action | Menu, path: tuple[Menu, ...]) -> MenuItem:
         match item:

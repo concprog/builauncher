@@ -13,7 +13,7 @@ makes that background clear again, with no change to BUI:
 import ctypes
 import math
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 import buipy
@@ -90,7 +90,7 @@ class Overlay(QWidget):
       - click on no widget: the pie centre goes back, elsewhere closes; Escape closes.
     """
 
-    def __init__(self, launcher: Launcher, daemon: bool) -> None:
+    def __init__(self, launcher: Launcher, daemon: bool, dwell: float) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
                          | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -114,6 +114,10 @@ class Overlay(QWidget):
         self._keys: set[int] = set()  # keys pressed while shown; a release of another is the trigger
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
+        self._picked = False  # the stroke's last act was a dwell pick: a release then keeps the new pie
+        self._dwell_at: tuple[int, int] | None = None  # the pointer in the drag, for the dwell pick
+        self._dwell_cb: Callable[[], None] | None = None  # the pick the dwell wait is for
+        self._dwell = QTimer(self, singleShot=True, interval=round(dwell * 1000), timeout=self._dwell_pick)
         self._fade_at, self._fading_out, self._searching = 0.0, False, False
         if self._layer:
             layer_surface(self)
@@ -128,6 +132,8 @@ class Overlay(QWidget):
 
     def summon(self) -> None:
         self._shown_at, self._keys, self._stroke, self._pressed_at = time.monotonic(), set(), None, None
+        self._picked, self._dwell_cb = False, None
+        self._dwell.stop()  # a drag's dwell wait does not survive a reopen
         self._fade_at, self._fading_out = self._shown_at, False
         self._launcher.reset()
         self._place()
@@ -234,19 +240,40 @@ class Overlay(QWidget):
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:  # noqa: N802
         at, start, self._pressed_at = self._at(e), self._pressed_at, None
+        picked, self._picked = self._picked, False
+        self._dwell.stop()
+        self._dwell_cb = None
         if start is None:
             self._launcher.app.ctx.release(*at, self._mods(e))
-        elif math.dist(at, start) <= DRAG_PX:
-            self._launcher.click_empty(*start)
-        else:
+        elif math.dist(at, start) > DRAG_PX:
             self._flick(start, at)
+        elif not picked:  # a dwell pick just opened a pie here: keep it
+            self._launcher.click_empty(*start)
         self._refresh()
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:  # noqa: N802
         at = self._at(e)
         self._stroke = (self._stroke[0] if self._stroke else at, at)
         self._launcher.app.ctx.motion(*at, self._mods(e))
+        self._drag(at)
         self._refresh()
+
+    def _drag(self, at: tuple[int, int]) -> None:
+        """In a stroke from empty space: waiting on a submenu or Back readies its pick."""
+        pick = self._launcher.drag_pick(*at) if self._pressed_at else None
+        self._dwell_at = at
+        if pick is self._dwell_cb:  # still on the same item: the wait goes on
+            return
+        self._dwell_cb = pick
+        (self._dwell.stop if pick is None else self._dwell.start)()
+
+    def _dwell_pick(self) -> None:
+        """A drag waited on a submenu or Back: make the pick, the stroke continues in the new pie."""
+        pick, self._dwell_cb = self._dwell_cb, None
+        if pick is None or self._pressed_at is None or pick is not self._launcher.drag_pick(*self._dwell_at):
+            return  # the pointer left, or the menu changed under it
+        pick()
+        self._pressed_at, self._stroke, self._picked = self._dwell_at, None, True
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
         alt_f4 = e.key() == Qt.Key.Key_F4 and e.modifiers() & Qt.KeyboardModifier.AltModifier

@@ -8,6 +8,7 @@ apps = true  # also search installed .desktop apps
 # after that, change it in the desktop's shortcut settings.
 shortcut = "CTRL+ALT+space"
 scale = 1.0  # size of the pie and the search (BUI ui scale)
+dwell = 0.3  # seconds a drag waits on a submenu or Back before it opens
 
 # the top pie: 1 to 7 items, as Search takes a slot
 

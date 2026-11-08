@@ -30,7 +30,7 @@ def main() -> int:
     buipy.kit_set_scale(cfg.scale)  # before any size is taken from the kit unit
     entries = [*actions(cfg.menu), *(("App", a) for a in (apps() if cfg.apps else ()))]
     launcher = Launcher(cfg.menu, entries, lambda: window.dismiss())
-    window = Overlay(launcher, daemon)
+    window = Overlay(launcher, daemon, cfg.dwell)
     # the window has its shell now; launched apps must not inherit layer-shell (they open full screen)
     os.environ.pop(SHELL_VAR, None) if shell is None else os.environ.update({SHELL_VAR: shell})
     if not daemon:

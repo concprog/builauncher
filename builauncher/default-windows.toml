@@ -4,6 +4,7 @@
 apps = true  # also search Start Menu shortcuts
 shortcut = "CTRL+ALT+space"  # RegisterHotKey; another app may already hold it
 scale = 1.0  # size of the pie and the search (BUI ui scale)
+dwell = 0.3  # seconds a drag waits on a submenu or Back before it opens
 
 # the top pie: 1 to 7 items, as Search takes a slot
 
