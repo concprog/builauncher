@@ -4,6 +4,8 @@ import pytest
 
 from builauncher.items.apps import read_entry
 from builauncher.config import DEFAULT, load
+
+LINUX = DEFAULT.with_name("default.toml")  # DEFAULT is the Windows menu on Windows
 from builauncher.fuzzy import search
 from builauncher.launcher import Launcher
 from builauncher.items.menu import Action, actions, parse
@@ -12,7 +14,7 @@ from builauncher.shortcut_windows import parse as parse_shortcut
 
 
 def test_default_config_loads():
-    cfg = load(DEFAULT)
+    cfg = load(LINUX)
     paths = {f"{p}:{a.name}" for p, a in actions(cfg.menu)}
     assert ":Terminal" in paths
     assert "System / Power:Reboot" in paths
@@ -54,7 +56,7 @@ def test_desktop_entry(tmp_path):
 def test_flick_and_back():
     closed, ran = [], []
     with mock.patch("builauncher.launcher.run", ran.append):
-        launcher = Launcher(load(DEFAULT).menu, [], lambda: closed.append(1))
+        launcher = Launcher(load(LINUX).menu, [], lambda: closed.append(1))
         rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
         launcher.reset()
         rows()
