@@ -6,7 +6,7 @@ apps = true  # also search installed .desktop apps
 # global shortcut, asked of the desktop at the first daemon start (XDG GlobalShortcuts portal).
 # after that, change it in the desktop's shortcut settings.
 shortcut = "CTRL+ALT+space"
-scale = 1.25  # size of the pie and the search (BUI ui scale)
+scale = 1.0  # size of the pie and the search (BUI ui scale)
 
 [[item]]
 name = "Terminal"

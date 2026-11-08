@@ -9,7 +9,7 @@ from .places import places
 
 DEFAULT = Path(__file__).with_name("default.toml")
 SHORTCUT = "CTRL+ALT+space"  # XDG shortcuts format
-SCALE = 1.25  # BUI ui scale; 1 is Blender's default
+SCALE = 1.0  # BUI ui scale; 1 is Blender's default
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,8 +30,8 @@ def load(path: Path | None = None) -> Config:
     raw = tomllib.loads(path.read_text())
     found = places()
     items = tuple(parse(item, found) for item in raw.get("item", []))
-    if not 0 < len(items) <= PIE_SLOTS:
-        raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS} items")
+    if not 0 < len(items) < PIE_SLOTS:
+        raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS - 1} items (one slot is Search)")
     scale = float(raw.get("scale", SCALE))
     if not 0.5 <= scale <= 4:
         raise ValueError(f"{path}: scale must be 0.5 to 4")
