@@ -193,6 +193,9 @@ class Overlay(QWidget):
         self._refresh()
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
+        alt_f4 = e.key() == Qt.Key.Key_F4 and e.modifiers() & Qt.KeyboardModifier.AltModifier
+        if e.key() == Qt.Key.Key_Escape or alt_f4:
+            return self.dismiss()  # before BUI: its pie and search field take Escape for themselves
         if not e.isAutoRepeat():
             self._keys.add(e.key())
         keysym = KEYSYMS.get(Qt.Key(e.key()), "")
@@ -211,6 +214,10 @@ class Overlay(QWidget):
         if e.isAutoRepeat() or e.key() in self._keys:
             return self._keys.discard(e.key())
         self.release()  # a key pressed before the window showed: the trigger
+
+    def closeEvent(self, e) -> None:  # noqa: N802
+        e.ignore()
+        self.dismiss()  # hide, so the daemon keeps running
 
     def focusOutEvent(self, e) -> None:  # noqa: N802
         self.dismiss()  # as Kando's hideOnFocusOut

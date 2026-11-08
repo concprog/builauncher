@@ -51,7 +51,6 @@ class Launcher:
         # results take the pie's place while searching
         self.app = App("builauncher", self.size, self.field, Column(*self._rows, spacing=0))
         self.app.bind("Tab", self.open_pie)
-        self.app.bind("Escape", close)
 
     def opaque(self) -> list[tuple[int, int, int, int]]:
         """Rects (x, y, w, h) that BUI fills: the search row, the result rows, the pie items."""
