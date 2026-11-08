@@ -7,13 +7,14 @@ import math
 from collections.abc import Callable
 
 import buipy
-from bui.components import App, ListView, MenuItem, PieMenu, SearchField, Separator
+from bui.components import App, Box, ListView, MenuItem, PieMenu, SearchField, Separator
 from bui.components.core import EV_SUBMIT
 
 from .apps import run
 from .fuzzy import search
 from .menu import Action, Menu
 
+SEARCH_PAD = 8  # px around the search bar, on Blender's box background
 ROWS = 6  # results below the pie centre fit in the window's lower half
 # window in kit units: the search row, then the pie (radius 5 units, items about 6 wide)
 WIDTH, SEARCH_HEIGHT, PIE_HEIGHT = 24, 2, 15
@@ -49,31 +50,32 @@ class Launcher:
         self._center = (self.size[0] // 2, self.size[1] // 2)
         # the search row and its results show in place of the pie
         self._gap = Separator(0)  # puts the search bar on the pie centre
-        self.app = App("builauncher", self.size, self._gap, self.field, self._list)
+        self._bar = Box(self.field, padding=SEARCH_PAD)
+        self.app = App("builauncher", self.size, self._gap, self._bar, self._list)
         self.app.render_raster(*self.size)  # lay out once to measure the bar
-        _, y, _, h = self.field.rect
+        _, y, _, h = self._bar.rect
         self._gap.set("factor", (self._center[1] - h // 2 - y) / u)
         self.app.bind("Tab", self.reset)
 
     @property
     def searching(self) -> bool:
-        return bool(self.field.get("visible"))
+        return bool(self._bar.get("visible"))
 
     def opaque(self) -> list[tuple[int, int, int, int]]:
         """Rects (x, y, w, h) that BUI fills: the search row, the result rows, the pie items."""
         shown = [self._list.rect] if self._found else []
         pie = (rect for _, rect in self.app.ctx.menu_rows(-1)) if self.app.ctx.popup_count() else ()
-        return [*([self.field.rect] if self.searching else []), *shown, *pie]
+        return [*([self._bar.rect] if self.searching else []), *shown, *pie]
 
     def reset(self) -> None:
         """No search, root pie: the state each time the menu opens."""
         self.field.set_value("")
-        self.field.set("visible", False)
+        self._bar.set("visible", False)
         self.open_pie()
 
     def search_only(self) -> None:
         self.app.ctx.close_popups()
-        self.field.set("visible", True)
+        self._bar.set("visible", True)
         self.app.ctx.focus_node(self.field)
 
     def flick(self, dx: float, dy: float) -> bool:
