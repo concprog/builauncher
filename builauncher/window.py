@@ -10,10 +10,11 @@ import ctypes
 import math
 import time
 from collections.abc import Iterable
+from pathlib import Path
 
 import buipy
 import numpy as np
-from PySide6.QtCore import QObject, QPointF, QRect, Qt, QTimer
+from PySide6.QtCore import QLibraryInfo, QObject, QPointF, QRect, Qt, QTimer
 from PySide6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QMouseEvent, QPainter
 from PySide6.QtWidgets import QWidget
 from shiboken6 import getCppPointer, wrapInstance
@@ -46,6 +47,12 @@ def background() -> int:
     r, g, b, _ = buipy.kit_theme_color("region_bg")
     assert abs(r - g) < 1e-3 and abs(g - b) < 1e-3, "region background is not grey"
     return round(r * 255)
+
+
+def layer_shell() -> bool:
+    """True if this Qt has the layer-shell plugin. A distro's plugin does not load in PyPI's Qt."""
+    plugins = Path(QLibraryInfo.path(QLibraryInfo.LibraryPath.PluginsPath))
+    return (plugins / "wayland-shell-integration" / "liblayer-shell.so").exists()
 
 
 def layer_surface(widget: QWidget) -> None:
@@ -96,7 +103,7 @@ class Overlay(QWidget):
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
         self._fade_at, self._fading_out, self._searching = 0.0, False, False
-        if QGuiApplication.platformName() == "wayland":
+        if QGuiApplication.platformName() == "wayland" and layer_shell():
             layer_surface(self)
 
     def trigger(self) -> None:
