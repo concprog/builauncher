@@ -1,8 +1,11 @@
+from unittest import mock
+
 import pytest
 
 from buiemenu.apps import read_entry
 from buiemenu.config import DEFAULT, load
 from buiemenu.fuzzy import score, search
+from buiemenu.launcher import Launcher
 from buiemenu.menu import Action, actions, parse
 
 
@@ -42,3 +45,22 @@ def test_desktop_entry(tmp_path):
 def test_submenu_fits_pie():
     with pytest.raises(ValueError):
         parse({"name": "m", "item": [{"name": str(i), "exec": "x"} for i in range(9)]})
+
+
+def test_flick_and_back():
+    closed, ran = [], []
+    with mock.patch("buiemenu.launcher.run", ran.append):
+        launcher = Launcher(load(DEFAULT).menu, [], lambda: closed.append(1))
+        rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
+        launcher.reset()
+        rows()
+        assert not launcher.flick(5, 0)  # too short
+        assert launcher.flick(-100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]
+        launcher.click_empty(*launcher._center)
+        assert rows()[0] == "Terminal" and not closed
+        launcher.click_empty(*launcher._center)
+        assert closed
+        launcher.reset()
+        rows()
+        launcher.flick(-100, 0)
+        assert ran == ["konsole"]

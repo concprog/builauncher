@@ -7,7 +7,9 @@ makes that background clear again, with no change to BUI:
     pixel at or below the background gets alpha 1 - v / background.
 """
 import ctypes
-from collections.abc import Callable, Iterable
+import math
+import time
+from collections.abc import Iterable
 
 import buipy
 import numpy as np
@@ -16,7 +18,7 @@ from PySide6.QtGui import QCursor, QGuiApplication, QImage, QKeyEvent, QMouseEve
 from PySide6.QtWidgets import QWidget
 from shiboken6 import getCppPointer, wrapInstance
 
-from bui.components import App
+from .launcher import Launcher
 
 Rect = tuple[int, int, int, int]  # x, y, w, h in raster pixels, as BUI gives them
 
@@ -30,6 +32,8 @@ KEYSYMS = {
 MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModifier, 2),
         (Qt.KeyboardModifier.AltModifier, 4))
 FRAME_MS = 16
+HOLD_S, DOUBLE_S = 0.25, 0.4  # trigger key: held longer is a hold, a second press sooner is a double tap
+DRAG_PX = 15  # Kando's drag threshold
 # LayerShellQt::Window: no anchors (compositor centres it), overlay layer, exclusive keyboard
 LAYER_SHELL = "libLayerShellQtInterface.so.6"
 LAYER_GET = "_ZN12LayerShellQt6Window3getEP7QWindow"
@@ -66,41 +70,79 @@ def matte(bgrx: bytes, w: int, h: int, opaque: Iterable[Rect], bg: int) -> np.nd
 
 
 class Overlay(QWidget):
-    def __init__(self, app: App, size: tuple[int, int], opaque: Callable[[], Iterable[Rect]]) -> None:
+    """The launcher's window. Gestures, as Kando's:
+      - a trigger opens it; the same trigger again closes it, a quick second one shows search only;
+      - trigger key held, pointer moved, key released: picks the item in that direction;
+      - mouse pressed, dragged, released: the same (marking mode);
+      - click on no widget: the pie centre goes back, elsewhere closes; Escape closes.
+    """
+
+    def __init__(self, launcher: Launcher, daemon: bool) -> None:
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
                          | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self._app, self._size, self._opaque, self._bg = app, size, opaque, background()
+        self._launcher, self._daemon, self._bg = launcher, daemon, background()
         self._image: tuple[np.ndarray, QImage] | None = None
         self._dpr = self.devicePixelRatioF()
-        self.resize(round(size[0] / self._dpr), round(size[1] / self._dpr))
+        w, h = launcher.size
+        self.resize(round(w / self._dpr), round(h / self._dpr))
         # BUI timers, animations and focus changes: redraw when the context asks
         self._tick = QTimer(self, interval=FRAME_MS, timeout=self._refresh)
-        self._tick.start()
-
-    def place(self) -> None:
-        """At the pointer on X11. On Wayland, a centred layer surface."""
+        self._shown_at = 0.0
+        self._keys: set[int] = set()  # keys pressed while shown; a release of another is the trigger
+        self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
+        self._pressed_at: tuple[int, int] | None = None
         if QGuiApplication.platformName() == "wayland":
-            return layer_surface(self)
+            layer_surface(self)
+
+    def trigger(self) -> None:
+        """The global shortcut fired."""
+        if not self.isVisible():
+            return self.summon()
+        if time.monotonic() - self._shown_at < DOUBLE_S:
+            return self._launcher.search_only()
+        self.dismiss()
+
+    def summon(self) -> None:
+        self._shown_at, self._keys, self._stroke, self._pressed_at = time.monotonic(), set(), None, None
+        self._launcher.reset()
+        self._place()
+        self.show()
+        self.activateWindow()
+
+    def dismiss(self) -> None:
+        self.hide()
+        if not self._daemon:
+            QGuiApplication.quit()
+
+    def _place(self) -> None:
+        """At the pointer on X11. On Wayland, the compositor centres the layer surface."""
+        if QGuiApplication.platformName() == "wayland":
+            return
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
         area, pos = screen.availableGeometry(), QCursor.pos()
-        centre = pos if area.contains(pos) and not pos.isNull() else area.center()
         rect = QRect(0, 0, self.width(), self.height())
-        rect.moveCenter(centre)
+        rect.moveCenter(pos if area.contains(pos) else area.center())
         rect.moveTo(min(max(rect.x(), area.left()), area.right() - rect.width()),
                     min(max(rect.y(), area.top()), area.bottom() - rect.height()))
         self.move(rect.topLeft())
 
+    def showEvent(self, e) -> None:  # noqa: N802
+        self._tick.start()
+
+    def hideEvent(self, e) -> None:  # noqa: N802
+        self._tick.stop()  # no frames while hidden
+
     def _refresh(self) -> None:
-        if self._app.ctx.needs_render():
+        if self._launcher.app.ctx.needs_render():
             self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
-        w, h = self._size
-        raster = self._app.render_raster(w, h)
-        px = matte(raster.rgb32(), w, h, self._opaque(), self._bg)
+        w, h = self._launcher.size
+        raster = self._launcher.app.render_raster(w, h)
+        px = matte(raster.rgb32(), w, h, self._launcher.opaque(), self._bg)
         image = QImage(px.data, w, h, w * 4, QImage.Format.Format_ARGB32_Premultiplied)
         image.setDevicePixelRatio(self._dpr)
         self._image = (px, image)  # QImage borrows px's memory
@@ -118,24 +160,53 @@ class Overlay(QWidget):
         left = isinstance(e, QMouseEvent) and bool(e.buttons() & Qt.MouseButton.LeftButton)
         return held | (8 if left else 0)
 
+    def _on_widget(self, x: int, y: int) -> bool:
+        return any(rx <= x < rx + rw and ry <= y < ry + rh for rx, ry, rw, rh in self._launcher.opaque())
+
+    def _flick(self, start: tuple[int, int], end: tuple[int, int]) -> bool:
+        return self._launcher.flick(end[0] - start[0], end[1] - start[1])
+
     def mousePressEvent(self, e: QMouseEvent) -> None:  # noqa: N802
-        press = self._app.ctx.context_menu if e.button() == Qt.MouseButton.RightButton else self._app.ctx.press
-        press(*self._at(e), self._mods(e))
+        at, ctx = self._at(e), self._launcher.app.ctx
+        if e.button() == Qt.MouseButton.RightButton:
+            ctx.context_menu(*at, self._mods(e))
+        elif self._on_widget(*at):
+            ctx.press(*at, self._mods(e))
+        else:
+            self._pressed_at = at  # empty space: a click there, or the start of a stroke
         self._refresh()
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:  # noqa: N802
-        self._app.ctx.release(*self._at(e), self._mods(e))
+        at, start, self._pressed_at = self._at(e), self._pressed_at, None
+        if start is None:
+            self._launcher.app.ctx.release(*at, self._mods(e))
+        elif math.dist(at, start) <= DRAG_PX:
+            self._launcher.click_empty(*start)
+        else:
+            self._flick(start, at)
         self._refresh()
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:  # noqa: N802
-        self._app.ctx.motion(*self._at(e), self._mods(e))
+        at = self._at(e)
+        self._stroke = (self._stroke[0] if self._stroke else at, at)
+        self._launcher.app.ctx.motion(*at, self._mods(e))
         self._refresh()
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
+        if not e.isAutoRepeat():
+            self._keys.add(e.key())
         keysym = KEYSYMS.get(Qt.Key(e.key()), "")
         text = "" if keysym or e.text() < " " else e.text()
-        self._app.ctx.key(text, keysym or text, self._mods(e))
+        self._launcher.app.ctx.key(text, keysym or text, self._mods(e))
+        self._refresh()
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:  # noqa: N802
+        held = time.monotonic() - self._shown_at >= HOLD_S
+        if e.isAutoRepeat() or e.key() in self._keys or not held or not self._stroke:
+            return self._keys.discard(e.key())
+        self._flick(*self._stroke)  # trigger key released after a hold: pick towards the pointer
+        self._stroke = None
         self._refresh()
 
     def focusOutEvent(self, e) -> None:  # noqa: N802
-        self.close()  # a launcher closes when it loses focus, as Kando does
+        self.dismiss()  # as Kando's hideOnFocusOut
