@@ -1,0 +1,75 @@
+# Copy to %APPDATA%\builauncher\menu.toml and edit.
+# The same format as the Linux default.toml: an item runs a command (`exec`) or opens a
+# sub-pie (`pie = "name"`); `pie = "places"` is built in. `icon` is a Blender icon name.
+apps = true  # also search Start Menu shortcuts
+shortcut = "CTRL+ALT+space"  # RegisterHotKey; another app may already hold it
+scale = 1.0  # size of the pie and the search (BUI ui scale)
+
+# the top pie: 1 to 7 items, as Search takes a slot
+
+[[item]]
+name = "Terminal"
+icon = "CONSOLE"
+exec = "wt"
+
+[[item]]
+name = "Browser"
+icon = "WORLD"
+exec = 'explorer "https://"'
+
+[[item]]
+name = "Files"
+icon = "FILE_FOLDER"
+pie = "places"
+
+[[item]]
+name = "Media"
+icon = "SOUND"
+pie = "media"
+
+[[item]]
+name = "System"
+icon = "PREFERENCES"
+pie = "system"
+
+# sub-pies. Windows has no media command, so WScript sends the media keys (179, 176, 177).
+
+[[pie.media]]
+name = "Play / Pause"
+icon = "PLAY"
+exec = 'powershell -NoProfile -WindowStyle Hidden -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]179)"'
+
+[[pie.media]]
+name = "Next"
+icon = "FF"
+exec = 'powershell -NoProfile -WindowStyle Hidden -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]176)"'
+
+[[pie.media]]
+name = "Previous"
+icon = "REW"
+exec = 'powershell -NoProfile -WindowStyle Hidden -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]177)"'
+
+[[pie.system]]
+name = "Lock"
+icon = "LOCKED"
+exec = "rundll32.exe user32.dll,LockWorkStation"
+
+[[pie.system]]
+name = "Sleep"
+icon = "SORTTIME"
+exec = "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"  # hibernates if hibernation is on
+
+[[pie.system]]
+name = "Power"
+icon = "QUIT"
+pie = "power"
+
+[[pie.power]]
+name = "Restart"
+icon = "FILE_REFRESH"
+exec = "shutdown /r /t 0"
+
+[[pie.power]]
+name = "Shut down"
+icon = "QUIT"
+exec = "shutdown /s /t 0"
