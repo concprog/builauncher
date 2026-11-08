@@ -1,7 +1,7 @@
 """The launcher window: a pie of commands at the pointer, and type-to-search.
 
-Kando's rules kept where BUI's pie allows: a sub-pie has a Back slot to its
-parent, Escape closes, and typing at any time searches every command.
+A sub-pie has a Back slot to its parent, Escape closes, and typing at any time
+searches every command.
 """
 import math
 from collections.abc import Callable
@@ -79,14 +79,18 @@ class Launcher:
         self._bar.set("visible", True)
         self.app.ctx.focus_node(self.field)
 
-    def flick(self, dx: float, dy: float) -> bool:
-        """Pick the pie item in the stroke's direction, as Kando's marking mode. False if none."""
-        u = buipy.kit_unit()
-        if math.hypot(dx, dy) < FLICK * u or not self.app.ctx.popup_count():
+    def flick(self, start: tuple[int, int], at: tuple[int, int]) -> bool:
+        """Pick the pie item under the pointer, else the one its direction from the centre
+        highlights, if a real stroke moved: marking mode. False if none."""
+        if not self.app.ctx.popup_count():
             return False
         cx, cy = self._center
-        aim = math.atan2(dy, dx)
-        x, y, w, h = min((rect for _, rect in self.app.ctx.menu_rows(-1)), key=lambda r: abs(
+        rows = self.app.ctx.menu_rows(-1)
+        hit = next((r for _, r in rows if r[0] <= at[0] < r[0] + r[2] and r[1] <= at[1] < r[1] + r[3]), None)
+        if hit is None and math.dist(at, start) < FLICK * buipy.kit_unit():
+            return False  # no lit item and a mere twitch of a stroke
+        aim = math.atan2(at[1] - cy, at[0] - cx)
+        x, y, w, h = hit or min((r for _, r in rows), key=lambda r: abs(
             math.remainder(math.atan2(r[1] + r[3] / 2 - cy, r[0] + r[2] / 2 - cx) - aim, math.tau)))
         self.app.ctx.press(x + w // 2, y + h // 2, 8)
         self.app.ctx.release(x + w // 2, y + h // 2, 0)

@@ -20,8 +20,8 @@ from an installed copy, not from `uvx`: the environment `uvx` makes is temporary
 | Input | Result |
 | --- | --- |
 | Hotkey | Open the pie. The hotkey again closes it. |
-| Hold the hotkey, move the pointer, release | Run the item in that direction. |
-| Drag from the empty middle | Run the item in the drag direction. |
+| Hold the hotkey, move the pointer, release | Run the lit item: under the pointer, or nearest in its direction. |
+| Drag from the empty middle | Run the lit item: under the pointer, or nearest in its direction. |
 | Drag, or hold the hotkey, and wait on a sub-pie item or Back | Open it, and keep going from there. |
 | Click an item | Run it, or open its sub-pie. |
 | Click the pie centre | Back to the parent pie. |

@@ -73,21 +73,42 @@ def test_flick_and_back():
         rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
         launcher.reset()
         rows()
-        assert not launcher.flick(5, 0)  # too short
+        c = launcher._center
+        assert not launcher.flick(c, (c[0] + 5, c[1]))  # too short
         assert rows()[:2] == ["Search", "Terminal"] and not launcher.searching
-        assert launcher.flick(100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]  # NE: System
-        launcher.click_empty(*launcher._center)
+        assert launcher.flick(c, (c[0] + 100, c[1] - 100)) and rows()[1:] == ["Lock", "Suspend", "Power"]  # NE
+        launcher.click_empty(*c)
         assert rows()[0] == "Search" and not closed
-        launcher.click_empty(*launcher._center)
+        launcher.click_empty(*c)
         assert closed
         launcher.reset()
         rows()
-        launcher.flick(100, 0)  # E: Terminal
+        launcher.flick(c, (c[0] + 100, c[1]))  # E: Terminal
         assert ran == ["konsole"]
         launcher.reset()
         rows()
-        launcher.flick(-100, 0)  # W: Search
+        launcher.flick(c, (c[0] - 100, c[1]))  # W: Search
         assert launcher.searching and not launcher.app.ctx.popup_count()
+
+
+def test_flick_picks_the_highlighted_item():
+    closed, ran = [], []
+    with mock.patch("builauncher.launcher.run", ran.append):
+        launcher = Launcher(load(LINUX).menu, [], lambda: closed.append(1))
+        rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
+        launcher.reset()
+        c = launcher._center
+        launcher.flick(c, (c[0] + 100, c[1] - 100))  # NE: the System sub-pie
+        suspend = next(a for a in load(LINUX).menu.items[4].items if a.name == "Suspend")
+        # the stroke points at Lock (E), but the pointer rests on Suspend's rect (SW): Suspend is lit
+        assert launcher.flick((100, 240), (200, 280))
+        assert ran == [suspend.exec] and not launcher.app.ctx.popup_count()
+        launcher.reset()
+        launcher.flick(c, (c[0] + 100, c[1] - 100))
+        del ran[:]
+        # a twitch of a stroke on the lit item still picks it: the pointer decides, not the stroke
+        assert launcher.flick((200, 280), (200, 280))
+        assert ran == [suspend.exec]
 
 
 def test_drag_pick():

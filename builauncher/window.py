@@ -38,8 +38,8 @@ MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModi
         (Qt.KeyboardModifier.AltModifier, 4))
 FRAME_MS = 16
 HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
-DRAG_PX = 15  # Kando's drag threshold
-FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # Kando's fade durations; also between pie and search
+DRAG_PX = 15  # px of drag before a release picks instead of clicks
+FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # fade durations; also between pie and search
 ENTER_WAIT_MS = 150  # Wayland: no pointer enter by then (pointer not over the screen), centre it
 # LayerShellQt::Window: all four anchors (full screen), overlay layer, exclusive keyboard
 LAYER_SHELL = "libLayerShellQtInterface.so.6"
@@ -73,17 +73,19 @@ def layer_surface(widget: QWidget) -> None:
 def matte(bgrx: bytes, w: int, h: int, opaque: Iterable[Rect], bg: int) -> np.ndarray:
     """Premultiplied BGRA from BUI's opaque BGRX raster."""
     px = np.frombuffer(bgrx, np.uint8).reshape(h, w, 4).copy()
-    b, g, r = (px[..., i].astype(np.int32) for i in range(3))
+    b, g, r = px[..., 0], px[..., 1], px[..., 2]  # views: the mask needs no channel copies
     shadow = (b == g) & (g == r) & (r <= bg)
     for x, y, rw, rh in opaque:
         shadow[max(y, 0):y + rh, max(x, 0):x + rw] = False
-    px[..., 3] = np.where(shadow, 255 - r * 255 // bg, 255)
-    px[..., :3][shadow] = 0  # black shadow, premultiplied
+    # one word per pixel zeroes rgb and alpha together; a masked store on the rgb view is 30x slower
+    px.reshape(h, w, 4).view(np.uint32)[..., 0][shadow] = 0  # black shadow, premultiplied
+    # r * 255 overflows a byte where the pointer is not: uint16 holds it, where() discards it
+    px[..., 3] = np.where(shadow, 255 - r.astype(np.uint16) * 255 // bg, 255)
     return px
 
 
 class Overlay(QWidget):
-    """The launcher's window. Gestures, as Kando's:
+    """The launcher's window. Gestures:
       - a trigger opens it; the same trigger again closes it, a quick second one shows search only;
       - trigger key held, pointer moved, key released: picks the item in that direction;
       - mouse pressed, dragged, released: the same (marking mode);
@@ -230,9 +232,6 @@ class Overlay(QWidget):
     def _on_widget(self, x: int, y: int) -> bool:
         return any(rx <= x < rx + rw and ry <= y < ry + rh for rx, ry, rw, rh in self._launcher.opaque())
 
-    def _flick(self, start: tuple[int, int], end: tuple[int, int]) -> bool:
-        return self._launcher.flick(end[0] - start[0], end[1] - start[1])
-
     def mousePressEvent(self, e: QMouseEvent) -> None:  # noqa: N802
         at, ctx = self._at(e), self._launcher.app.ctx
         if e.button() == Qt.MouseButton.RightButton:
@@ -251,7 +250,7 @@ class Overlay(QWidget):
         if start is None:
             self._launcher.app.ctx.release(*at, self._mods(e))
         elif math.dist(at, start) > DRAG_PX:
-            self._flick(start, at)
+            self._launcher.flick(start, at)
         elif not picked:  # a dwell pick just opened a pie here: keep it
             self._launcher.click_empty(*start)
         self._refresh()
@@ -309,7 +308,7 @@ class Overlay(QWidget):
         """The trigger was released. After a hold, pick towards the pointer."""
         self._holding = False
         if self.isVisible() and self._stroke and time.monotonic() - self._shown_at >= HOLD_S:
-            self._flick(*self._stroke)
+            self._launcher.flick(*self._stroke)
             self._refresh()
         self._stroke = None
 
@@ -323,4 +322,4 @@ class Overlay(QWidget):
         self.dismiss()  # hide, so the daemon keeps running
 
     def focusOutEvent(self, e) -> None:  # noqa: N802
-        self.dismiss()  # as Kando's hideOnFocusOut
+        self.dismiss()  # hide on focus loss
