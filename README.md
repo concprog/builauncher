@@ -4,7 +4,7 @@ A pie-menu launcher drawn with [BUI](https://github.com/ppmpreetham/BUI), Blende
 library, in a Qt window through PySide6 (Qt for Python; PyQt is not used). Press a hotkey,
 flick towards an item, or type to search every command and installed app.
 
-![The pie, and a search for "p"](assets/screenshot.png)
+![](assets/screenshot.png)
 
 ## Install
 
@@ -117,10 +117,7 @@ Sleep hibernates instead when hibernation is on.
 
 ## Thanks
 
-- [Blender](https://www.blender.org), whose UI and pie menus BUI follows.
-- [BUI](https://github.com/ppmpreetham/BUI), which draws the menu.
-- [Kando](https://github.com/kando-menu/kando), for the gestures, timings and fades.
-- [PySide6](https://doc.qt.io/qtforpython-6/) (Qt for Python), for the window.
-- [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz), for the search.
-- [jeepney](https://gitlab.com/takluyver/jeepney), for D-Bus.
-- [numpy](https://numpy.org), for the transparency.
+- [BUI](https://github.com/ppmpreetham/BUI)
+- [Kando](https://github.com/kando-menu/kando)
+- [PySide6](https://doc.qt.io/qtforpython-6/)
+- [jeepney](https://gitlab.com/takluyver/jeepney)
