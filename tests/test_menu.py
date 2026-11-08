@@ -56,15 +56,20 @@ def test_flick_and_back():
         launcher.reset()
         rows()
         assert not launcher.flick(5, 0)  # too short
-        assert launcher.flick(-100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]
+        assert rows()[:2] == ["Search", "Terminal"] and not launcher.searching
+        assert launcher.flick(100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]  # NE: System
         launcher.click_empty(*launcher._center)
-        assert rows()[0] == "Terminal" and not closed
+        assert rows()[0] == "Search" and not closed
         launcher.click_empty(*launcher._center)
         assert closed
         launcher.reset()
         rows()
-        launcher.flick(-100, 0)
+        launcher.flick(100, 0)  # E: Terminal
         assert ran == ["konsole"]
+        launcher.reset()
+        rows()
+        launcher.flick(-100, 0)  # W: Search
+        assert launcher.searching and not launcher.app.ctx.popup_count()
 
 
 def test_places_fit_a_sub_pie():

@@ -46,26 +46,31 @@ class Launcher:
         self._rows = [Button("", lambda i=i: self._launch(self._found[i][1]), visible=False)
                       for i in range(ROWS)]
         u = buipy.kit_unit()
-        self._center = (WIDTH * u // 2, SEARCH_HEIGHT * u + PIE_HEIGHT * u // 2)
         self.size = (WIDTH * u, (SEARCH_HEIGHT + PIE_HEIGHT) * u)
-        # results take the pie's place while searching
+        self._center = (self.size[0] // 2, self.size[1] // 2)
+        # the search row and its results show in place of the pie
         self.app = App("builauncher", self.size, self.field, Column(*self._rows, spacing=0))
-        self.app.bind("Tab", self.open_pie)
+        self.app.bind("Tab", self.reset)
+
+    @property
+    def searching(self) -> bool:
+        return bool(self.field.get("visible"))
 
     def opaque(self) -> list[tuple[int, int, int, int]]:
         """Rects (x, y, w, h) that BUI fills: the search row, the result rows, the pie items."""
         shown = (row.rect for row in self._rows[:len(self._found)])
         pie = (rect for _, rect in self.app.ctx.menu_rows(-1)) if self.app.ctx.popup_count() else ()
-        return [self.field.rect, *shown, *pie]
+        return [*([self.field.rect] if self.searching else []), *shown, *pie]
 
     def reset(self) -> None:
-        """Empty search, root pie: the state each time the menu opens."""
+        """No search, root pie: the state each time the menu opens."""
         self.field.set_value("")
-        self.app.ctx.focus_node(self.field)
+        self.field.set("visible", False)
         self.open_pie()
 
     def search_only(self) -> None:
         self.app.ctx.close_popups()
+        self.field.set("visible", True)
         self.app.ctx.focus_node(self.field)
 
     def flick(self, dx: float, dy: float) -> bool:
@@ -90,9 +95,11 @@ class Launcher:
         """Open the last sub-menu in path, or the root when path is empty."""
         menu = path[-1] if path else self._menu
         self._back = (lambda: self.open_pie(path[:-1])) if path else self._close
-        back = [MenuItem("Back", self._back, icon="BACK")] if path else []
+        # slot 1 (W): Back in a sub-pie, Search at the root
+        first = (MenuItem("Back", self._back, icon="BACK") if path
+                 else MenuItem("Search", self.search_only, icon="VIEWZOOM"))
         self.app.ctx.set_pointer(*self._center)  # a pie opens at the pointer: keep it inside the window
-        PieMenu.show(self.app.ctx, [*back, *(self._pie_item(i, path) for i in menu.items)], menu.name if path else "")
+        PieMenu.show(self.app.ctx, [first, *(self._pie_item(i, path) for i in menu.items)], menu.name if path else "")
 
     def _pie_item(self, item: Action | Menu, path: tuple[Menu, ...]) -> MenuItem:
         match item:
