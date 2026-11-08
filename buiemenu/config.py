@@ -7,12 +7,14 @@ from pathlib import Path
 from .menu import PIE_SLOTS, Menu, parse
 
 DEFAULT = Path(__file__).with_name("default.toml")
+SHORTCUT = "CTRL+ALT+space"  # XDG shortcuts format
 
 
 @dataclass(frozen=True, slots=True)
 class Config:
     menu: Menu
     apps: bool = True
+    shortcut: str = SHORTCUT  # asked for at the first bind; then the desktop's settings own it
 
 
 def user_path() -> Path:
@@ -26,4 +28,5 @@ def load(path: Path | None = None) -> Config:
     items = raw.get("item", [])
     if not 0 < len(items) <= PIE_SLOTS:
         raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS} items")
-    return Config(Menu("buiemenu", tuple(map(parse, items))), raw.get("apps", True))
+    return Config(Menu("buiemenu", tuple(map(parse, items))), raw.get("apps", True),
+                  raw.get("shortcut", SHORTCUT))
