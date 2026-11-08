@@ -16,7 +16,7 @@ items 1 to 4 the PyQt host could go too.
 | 6 | No pie sub-menus. Blender calls `wm.call_menu_pie` from a pie item. | `Launcher.open_pie(path)` closes the pie and opens a new one, with a Back slot. | No animation between levels; builauncher keeps the menu path itself. |
 | 7 | `PieMenu.show` opens at the context's pointer. | `ctx.set_pointer(centre)` before each `show`. | A fake pointer move. |
 | 8 | No hit test from Python. | `Launcher.opaque()` collects `field.rect`, the rows' `rect` and `ctx.menu_rows(-1)`, and `Overlay._on_widget` tests them. | builauncher must know every widget it shows. |
-| 9 | `SearchField` has no `on_submit`. While it edits, it takes Up and Down. | `QueryField` sets `events` and catches `EV_SUBMIT`. | No keyboard navigation through results. |
+| 9 | `SearchField` has no `on_submit`. While it edits, it takes Up and Down. | `QueryField` sets `events` and catches `EV_SUBMIT`. | `Overlay` catches Up and Down first and moves the `ListView` row. |
 | 10 | Only `kit_set_theme("dark" or "light")`. No single theme colour can be set. | The matting needs the region background to be grey and asserts it. | A theme with a coloured background breaks the matting. |
 
 Out of scope for BUI: global shortcuts (the desktop binds `builauncher`), the

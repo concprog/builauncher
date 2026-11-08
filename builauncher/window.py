@@ -198,6 +198,9 @@ class Overlay(QWidget):
             return self.dismiss()  # before BUI: its pie and search field take Escape for themselves
         if not e.isAutoRepeat():
             self._keys.add(e.key())
+        if self._launcher.searching and e.key() in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+            self._launcher.step(1 if e.key() == Qt.Key.Key_Down else -1)
+            return self._refresh()
         if e.text() >= " " and not self._launcher.searching:
             self._launcher.search_only()  # typing at any time searches
         keysym = KEYSYMS.get(Qt.Key(e.key()), "")

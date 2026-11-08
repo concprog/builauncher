@@ -7,7 +7,7 @@ import math
 from collections.abc import Callable
 
 import buipy
-from bui.components import App, Button, Column, MenuItem, PieMenu, SearchField
+from bui.components import App, ListView, MenuItem, PieMenu, SearchField
 from bui.components.core import EV_SUBMIT
 
 from .apps import run
@@ -42,14 +42,13 @@ class Launcher:
         self._back: Callable[[], None] = close  # the centre and Back open the parent, or close at the root
         self._found: list[Entry] = []
         self.field = QueryField(self._query, self._submit)
-        # fixed pool: a query changes text and visibility, it does not make nodes
-        self._rows = [Button("", lambda i=i: self._launch(self._found[i][1]), visible=False)
-                      for i in range(ROWS)]
+        # Blender's UI list: icons, left-aligned names, the selected row lit; a click runs it
+        self._list = ListView(rows=ROWS, visible=False, on_change=lambda i: self._launch(self._found[i][1]))
         u = buipy.kit_unit()
         self.size = (WIDTH * u, (SEARCH_HEIGHT + PIE_HEIGHT) * u)
         self._center = (self.size[0] // 2, self.size[1] // 2)
         # the search row and its results show in place of the pie
-        self.app = App("builauncher", self.size, self.field, Column(*self._rows, spacing=0))
+        self.app = App("builauncher", self.size, self.field, self._list)
         self.app.bind("Tab", self.reset)
 
     @property
@@ -58,7 +57,7 @@ class Launcher:
 
     def opaque(self) -> list[tuple[int, int, int, int]]:
         """Rects (x, y, w, h) that BUI fills: the search row, the result rows, the pie items."""
-        shown = (row.rect for row in self._rows[:len(self._found)])
+        shown = [self._list.rect] if self._found else []
         pie = (rect for _, rect in self.app.ctx.menu_rows(-1)) if self.app.ctx.popup_count() else ()
         return [*([self.field.rect] if self.searching else []), *shown, *pie]
 
@@ -108,17 +107,23 @@ class Launcher:
             case Menu():
                 return MenuItem(item.name, lambda: self.open_pie((*path, item)), icon=item.icon or None)
 
+    def step(self, delta: int) -> None:
+        """Move the lit result row (Up, Down)."""
+        if self._found:
+            self._list.set_value(max(0, min(len(self._found) - 1, self._list.value + delta)), notify=False)
+
     def _query(self, text: str) -> None:
         self._found = search(text, self._entries, key=lambda e: e[1].name, limit=ROWS) if text else []
-        for row, entry in zip(self._rows, self._found + [None] * (ROWS - len(self._found))):
-            row.set("visible", entry is not None)
-            row.set("text", (f"{entry[1].name}   · {entry[0]}" if entry[0] else entry[1].name) if entry else "")
-            row.set("icon", entry[1].icon if entry and entry[0] != "App" else "")
+        self._list.set("icons", ["WINDOW" if path == "App" else a.icon or "PLAY" for path, a in self._found])
+        self._list.items = [f"{a.name}    {path}" if path and path != "App" else a.name for path, a in self._found]
+        self._list.set("rows", max(len(self._found), 1))
+        self._list.set_value(0, notify=False)
+        self._list.set("visible", bool(self._found))
         self.app.ctx.close_popups()
 
     def _submit(self) -> None:
         if self._found:
-            self._launch(self._found[0][1])
+            self._launch(self._found[self._list.value][1])
 
     def _launch(self, action: Action) -> None:
         run(action.exec)
