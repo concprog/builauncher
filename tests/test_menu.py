@@ -2,12 +2,12 @@ from unittest import mock
 
 import pytest
 
-from builauncher.apps import read_entry
+from builauncher.items.apps import read_entry
 from builauncher.config import DEFAULT, load
 from builauncher.fuzzy import search
 from builauncher.launcher import Launcher
-from builauncher.menu import Action, actions, parse
-from builauncher.places import places
+from builauncher.items.menu import Action, actions, parse
+from builauncher.items.places import places
 from builauncher.shortcut_windows import parse as parse_shortcut
 
 

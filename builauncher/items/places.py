@@ -4,7 +4,7 @@ Windows (Known Folders) and macOS. The trash is no standard path: see system.TRA
 from PySide6.QtCore import QStandardPaths
 
 from .menu import PIE_SLOTS, Action
-from .system import TRASH, open_command
+from ..system import TRASH, open_command
 
 L = QStandardPaths.StandardLocation
 FOLDERS = (("Home", L.HomeLocation, "HOME"), ("Documents", L.DocumentsLocation, "DOCUMENTS"),

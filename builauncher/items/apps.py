@@ -6,7 +6,7 @@ from configparser import ConfigParser, Error
 from pathlib import Path
 
 from .menu import Action
-from .system import WINDOWS, open_command
+from ..system import WINDOWS, open_command
 
 FIELD_CODE = re.compile(r"\s*%[fFuUdDnNickvm]")
 

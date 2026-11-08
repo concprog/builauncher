@@ -3,8 +3,8 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from .menu import PIE_SLOTS, Menu, parse
-from .places import places
+from .items.menu import PIE_SLOTS, Menu, parse
+from .items.places import places
 from .system import WINDOWS, config_dir
 
 DEFAULT = Path(__file__).with_name("default-windows.toml" if WINDOWS else "default.toml")

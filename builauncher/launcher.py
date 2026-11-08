@@ -11,7 +11,7 @@ from bui.components import App, Box, ListView, MenuItem, PieMenu, SearchField, S
 from bui.components.core import EV_SUBMIT
 
 from .fuzzy import search
-from .menu import Action, Menu
+from .items.menu import Action, Menu
 from .system import run
 
 SEARCH_PAD = 8  # px around the search bar, on Blender's box background

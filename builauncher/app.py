@@ -6,11 +6,11 @@ from pathlib import Path
 import buipy
 from PySide6.QtWidgets import QApplication
 
-from .apps import apps
+from .items.apps import apps
 from .config import load
 from .daemon import serve
 from .launcher import Launcher
-from .menu import actions
+from .items.menu import actions
 from .shortcut import bind
 from .window import Overlay
 
