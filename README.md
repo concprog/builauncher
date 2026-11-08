@@ -12,7 +12,7 @@ installed app.
     builauncher install           # start the daemon at every login
     builauncher daemon &          # start it now, for this session
 
-Then press **Ctrl+Alt+Space**. `builauncher uninstall` removes the login entries.
+Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries.
 
 builauncher uses BUI from PyPI (`blenderui`). It also needs PySide6, PyGObject and
 `layer-shell-qt` from your distribution (on Fedora: `python3-pyside6`,
@@ -69,15 +69,17 @@ slot.
 
 ## Desktop support
 
-- **Shortcut:** the daemon asks the desktop for the shortcut through the
-  [XDG GlobalShortcuts portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html)
-  (KDE Plasma, GNOME 48 and later, Hyprland). After the first start, change it in the
-  desktop's shortcut settings. Without the portal, bind the `builauncher` command to a key
-  yourself.
-- **Window:** on Wayland it is a centred layer-shell overlay with no frame. On X11 it opens
-  at the pointer.
-- **Login:** `install` writes an XDG autostart entry. Sway and Hyprland do not run those;
-  add `builauncher daemon` to their startup config.
+The daemon asks the desktop for its shortcut through the
+[XDG GlobalShortcuts portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html),
+which KDE Plasma, GNOME 48 and later, and Hyprland provide. After the first start, change
+the shortcut in the desktop's shortcut settings. On a desktop without the portal, bind the
+`builauncher` command to a key yourself.
+
+On Wayland the menu is a centred layer-shell overlay with no frame. On X11 it opens at the
+pointer.
+
+`install` writes an XDG autostart entry. Sway and Hyprland do not run those, so add
+`builauncher daemon` to their startup config.
 
 ## Development
 
