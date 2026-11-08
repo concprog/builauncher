@@ -6,7 +6,7 @@ import sys
 
 from .install import install, uninstall
 from .system import WINDOWS
-from .trigger import send_trigger
+from .trigger import STOP, TRIGGER, send
 
 
 def parser() -> argparse.ArgumentParser:
@@ -14,6 +14,7 @@ def parser() -> argparse.ArgumentParser:
     sub = cli.add_subparsers(dest="command", metavar="command")
     sub.add_parser("open", help="open the menu: trigger the daemon, or open it once (the default)")
     sub.add_parser("daemon", help="stay running, bind the global shortcut, wait for triggers")
+    sub.add_parser("stop", help="stop the running daemon")
     sub.add_parser("install", help="add the autostart entry and the app entry")
     sub.add_parser("uninstall", help="remove them")
     for name in ("open", "daemon"):
@@ -28,9 +29,13 @@ def main() -> int:
             install()
         case "uninstall":
             uninstall()
+        case "stop":
+            if not send(STOP):
+                print("builauncher: no daemon runs", file=sys.stderr)
+                return 1
         case "daemon" | "open" | None:
             daemon = args.command == "daemon"
-            if not daemon and send_trigger():
+            if not daemon and send(TRIGGER):
                 return 0
             config = [args.config] if getattr(args, "config", None) else []
             argv = [sys.executable, "-m", "builauncher.app", *(["--daemon"] if daemon else []), *config]

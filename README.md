@@ -40,6 +40,7 @@ everything it needs.
 | --- | --- |
 | `builauncher` or `builauncher open` | Open the menu. With no daemon running, it opens once and exits. |
 | `builauncher daemon` | Stay running and bind the global shortcut. |
+| `builauncher stop` | Stop the running daemon. |
 | `builauncher install` | Add the login entry and the app entry (XDG autostart). |
 | `builauncher uninstall` | Remove them. |
 
