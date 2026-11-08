@@ -200,13 +200,17 @@ class Overlay(QWidget):
         self._launcher.app.ctx.key(text, keysym or text, self._mods(e))
         self._refresh()
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:  # noqa: N802
-        held = time.monotonic() - self._shown_at >= HOLD_S
-        if e.isAutoRepeat() or e.key() in self._keys or not held or not self._stroke:
-            return self._keys.discard(e.key())
-        self._flick(*self._stroke)  # trigger key released after a hold: pick towards the pointer
+    def release(self) -> None:
+        """The trigger was released. After a hold, pick towards the pointer."""
+        if self.isVisible() and self._stroke and time.monotonic() - self._shown_at >= HOLD_S:
+            self._flick(*self._stroke)
+            self._refresh()
         self._stroke = None
-        self._refresh()
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:  # noqa: N802
+        if e.isAutoRepeat() or e.key() in self._keys:
+            return self._keys.discard(e.key())
+        self.release()  # a key pressed before the window showed: the trigger
 
     def focusOutEvent(self, e) -> None:  # noqa: N802
         self.dismiss()  # as Kando's hideOnFocusOut
