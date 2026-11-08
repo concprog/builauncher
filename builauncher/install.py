@@ -36,13 +36,13 @@ def command() -> str:
 
 def install() -> None:
     app, autostart = paths()
-    for path, args in ((app, ""), (autostart, " --daemon")):
+    for path, args in ((app, ""), (autostart, " daemon")):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(ENTRY.format(exec=command() + args))
         print(f"wrote {path}")
     if tool := shutil.which("update-desktop-database"):
         subprocess.run([tool, str(app.parent)], check=False)
-    print("start it now with: builauncher --daemon &   (it starts by itself at the next login)")
+    print("start it now with: builauncher daemon &   (it starts by itself at the next login)")
 
 
 def uninstall() -> None:
