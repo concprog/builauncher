@@ -55,20 +55,29 @@ Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml` and edit it
     [[item]]
     name = "Terminal"
     icon = "CONSOLE"              # a Blender icon name
-    exec = "konsole"
+    exec = "konsole"              # run a command
 
-An item has one of these:
+    [[item]]
+    name = "Media"
+    icon = "SOUND"
+    pie = "media"                 # open the sub-pie named media
 
-- `exec`: a command to run.
-- 1 to 8 `[[...item]]` children: a sub-pie.
-- `places = true`: a sub-pie of Home, Documents, Downloads, Music, Pictures, Videos and
-  the Trash.
+    [[pie.media]]
+    name = "Next"
+    icon = "FF"
+    exec = "playerctl next"
 
-The top pie holds 7 items, because Search takes one slot. A sub-pie holds 7 and a Back
-slot.
+An item has either `exec` or `pie`. Each `[[pie.NAME]]` table is one item of that
+sub-pie, and its items can open further sub-pies. `pie = "places"` is built in: Home,
+Documents, Downloads, Music, Pictures, Videos and the Trash. A `[[pie.places]]` of your
+own replaces it.
+
+The top pie holds 7 items, because Search takes one slot. A sub-pie also holds 7,
+because Back takes one. A pie that opens itself, directly or through another, is rejected
+at load.
 
 ## Desktop support
-
+### Linux
 The daemon asks the desktop for its shortcut through the
 [XDG GlobalShortcuts portal](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html),
 which KDE Plasma, GNOME 48 and later, and Hyprland provide. After the first start, change
