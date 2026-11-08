@@ -22,7 +22,7 @@ from an installed copy, not from `uvx`: the environment `uvx` makes is temporary
 | Hotkey | Open the pie. The hotkey again closes it. |
 | Hold the hotkey, move the pointer, release | Run the item in that direction. |
 | Drag from the empty middle | Run the item in the drag direction. |
-| Drag and wait on a sub-pie item or Back | Open it, and keep dragging from there. |
+| Drag, or hold the hotkey, and wait on a sub-pie item or Back | Open it, and keep going from there. |
 | Click an item | Run it, or open its sub-pie. |
 | Click the pie centre | Back to the parent pie. |
 | Search item, or start typing | Search menu commands and installed apps. |

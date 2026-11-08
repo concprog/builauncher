@@ -87,6 +87,7 @@ class Overlay(QWidget):
       - a trigger opens it; the same trigger again closes it, a quick second one shows search only;
       - trigger key held, pointer moved, key released: picks the item in that direction;
       - mouse pressed, dragged, released: the same (marking mode);
+      - in either stroke, waiting on a submenu or Back opens it, the stroke continuing there;
       - click on no widget: the pie centre goes back, elsewhere closes; Escape closes.
     """
 
@@ -114,6 +115,7 @@ class Overlay(QWidget):
         self._keys: set[int] = set()  # keys pressed while shown; a release of another is the trigger
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
+        self._holding = False  # the trigger key is down: a stroke of motion, no button
         self._picked = False  # the stroke's last act was a dwell pick: a release then keeps the new pie
         self._dwell_at: tuple[int, int] | None = None  # the pointer in the drag, for the dwell pick
         self._dwell_cb: Callable[[], None] | None = None  # the pick the dwell wait is for
@@ -123,7 +125,8 @@ class Overlay(QWidget):
             layer_surface(self)
 
     def trigger(self) -> None:
-        """The global shortcut fired."""
+        """The global shortcut fired (pressed: a stroke of motion starts, no button)."""
+        self._holding = True
         if not self.isVisible() or self._fading_out:
             return self.summon()
         if time.monotonic() - self._shown_at < DOUBLE_S:
@@ -143,6 +146,8 @@ class Overlay(QWidget):
     def dismiss(self) -> None:
         """Fade out, then hide."""
         if self.isVisible() and not self._fading_out:
+            self._dwell.stop()  # a wait may not open a pie in a closing window
+            self._dwell_cb = None
             self._fade_at, self._fading_out = time.monotonic(), True
             self.update()
 
@@ -258,9 +263,14 @@ class Overlay(QWidget):
         self._drag(at)
         self._refresh()
 
+    @property
+    def _stroking(self) -> bool:
+        """A stroke is live: a button drag from empty space, or a held trigger's motion."""
+        return self._pressed_at is not None or self._holding
+
     def _drag(self, at: tuple[int, int]) -> None:
-        """In a stroke from empty space: waiting on a submenu or Back readies its pick."""
-        pick = self._launcher.drag_pick(*at) if self._pressed_at else None
+        """In a stroke: waiting on a submenu or Back readies its pick."""
+        pick = self._launcher.drag_pick(*at) if self._stroking else None
         self._dwell_at = at
         if pick is self._dwell_cb:  # still on the same item: the wait goes on
             return
@@ -268,12 +278,14 @@ class Overlay(QWidget):
         (self._dwell.stop if pick is None else self._dwell.start)()
 
     def _dwell_pick(self) -> None:
-        """A drag waited on a submenu or Back: make the pick, the stroke continues in the new pie."""
+        """A stroke waited on a submenu or Back: make the pick, the stroke continues in the new pie."""
         pick, self._dwell_cb = self._dwell_cb, None
-        if pick is None or self._pressed_at is None or pick is not self._launcher.drag_pick(*self._dwell_at):
+        if pick is None or not self._stroking or pick is not self._launcher.drag_pick(*self._dwell_at):
             return  # the pointer left, or the menu changed under it
         pick()
-        self._pressed_at, self._stroke, self._picked = self._dwell_at, None, True
+        if self._pressed_at is not None:  # a button stroke restarts at the pick; a trigger's has no press
+            self._pressed_at = self._dwell_at
+        self._stroke, self._picked = None, True
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
         alt_f4 = e.key() == Qt.Key.Key_F4 and e.modifiers() & Qt.KeyboardModifier.AltModifier
@@ -295,6 +307,7 @@ class Overlay(QWidget):
 
     def release(self) -> None:
         """The trigger was released. After a hold, pick towards the pointer."""
+        self._holding = False
         if self.isVisible() and self._stroke and time.monotonic() - self._shown_at >= HOLD_S:
             self._flick(*self._stroke)
             self._refresh()
