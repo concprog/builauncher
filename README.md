@@ -50,7 +50,7 @@ Gestures (from Kando and Blender's pie):
 | Click the pie centre | Back to the parent pie, or close at the top. |
 | Escape or Alt+F4 (in the pie or the search), click outside the widgets, focus lost | Close. |
 | Search slot (west), or typing at any time | Search bar and results in place of the pie: fuzzy search over menu actions and `.desktop` apps. Up and Down move the lit row; Return or a click runs it. |
-| Tab | Back to the pie. |
+| Tab, or Backspace on an empty search | Back to the pie. |
 
 On Wayland the window is a centred, borderless layer-shell overlay that takes the
 keyboard (needs `layer-shell-qt`). On X11 it opens at the pointer.
@@ -86,5 +86,6 @@ that would let builauncher use buipy alone.
 - [x] Files sub-pie of the platform's standard folders, and a `scale` setting
 - [x] `builauncher install`: XDG autostart, and a global shortcut from the portal
 - [x] Gestures: hold and release, double tap, drag pick, centre back, dismissal
+- [x] Search bar on the pie centre; fades between pie and search, and on open and close
 - [x] Results in Blender's UI list: icons, Up and Down move the lit row, Return or a click runs it
 - [ ] Drop Qt when BUI has the features in docs/bui-gaps.md

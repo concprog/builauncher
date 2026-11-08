@@ -17,6 +17,8 @@ items 1 to 4 the PyQt host could go too.
 | 7 | `PieMenu.show` opens at the context's pointer. | `ctx.set_pointer(centre)` before each `show`. | A fake pointer move. |
 | 8 | No hit test from Python. | `Launcher.opaque()` collects `field.rect`, the rows' `rect` and `ctx.menu_rows(-1)`, and `Overlay._on_widget` tests them. | builauncher must know every widget it shows. |
 | 9 | `SearchField` has no `on_submit`. While it edits, it takes Up and Down. | `QueryField` sets `events` and catches `EV_SUBMIT`. | `Overlay` catches Up and Down first and moves the `ListView` row. |
+| 11 | The pie takes only 1 to 8 and Return (`pie_key`). BUI's menus already have Blender's menu search (`menu_filter`), but the pie does not use it. | A separate `SearchField` and `ListView` in place of the pie. | Two widgets, and the switch between them. |
+| 12 | No pie open animation (Blender's `U.pie_animation_timeout`). | `Overlay` fades the whole window. | A numpy pass per frame while fading. |
 | 10 | Only `kit_set_theme("dark" or "light")`. No single theme colour can be set. | The matting needs the region background to be grey and asserts it. | A theme with a coloured background breaks the matting. |
 
 Out of scope for BUI: global shortcuts (the desktop binds `builauncher`), the
@@ -54,6 +56,9 @@ item follows the Blender source that it names.
   parent.
 - **`PieMenu.show(ctx, items, title, at=(x, y))`** opens a pie at a point without
   moving the pointer.
+- **Pie type-to-search.** Typed text goes to the pie's `MenuData` query, so `menu_filter` (Blender's
+  menu search) lists the matches under the pie, as in a regular menu.
+- **Pie open animation**, as Blender's `U.pie_animation_timeout`.
 - **`ctx.hit(x, y)`** returns the node under a point, or `None`.
 - **`SearchField(on_submit=...)`** is called on Return. While the field edits, Up and
   Down go to `on_navigate(step)`.
