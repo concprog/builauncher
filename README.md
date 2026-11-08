@@ -7,9 +7,15 @@ fuzzy-search every command and installed app.
 
 ## Use
 
-    pip install .               # pulls blenderui (BUI) from PyPI; PyGObject and layer-shell-qt come from the distro
-    builauncher install         # autostart and app entry; `builauncher uninstall` removes them
-    builauncher --daemon &      # this session only; later sessions start it by themselves
+    uv venv --system-site-packages   # use the distro's PySide6 and PyGObject
+    uv sync                          # blenderui (BUI) and numpy from PyPI
+    uv run builauncher install       # autostart and app entry; `uninstall` removes them
+    uv run builauncher --daemon &    # this session only; later sessions start it by themselves
+
+Distro packages: `python3-pyside6`, `python3-gobject` and `layer-shell-qt` (Fedora names).
+Without the first two, `uv sync --extra wheels` gets them from PyPI; PyGObject then
+builds from source and needs the gobject-introspection and cairo headers.
+`uv build` makes the wheel, and `uv run pytest` runs the tests.
 
 `install` writes two freedesktop.org entries, so any XDG desktop reads them:
 
@@ -52,7 +58,6 @@ Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml`. An item ha
 either `exec` or 1 to 8 child `item` tables (BUI's pie has 8 slots). `icon`
 is a Blender icon name. Bad items are rejected at load.
 
-    python -m pytest
 
 ## BUI
 
