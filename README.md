@@ -9,7 +9,7 @@ fuzzy-search every command and installed app.
 
     pip install .               # pulls blenderui (BUI) from PyPI; PyGObject and layer-shell-qt come from the distro
     builauncher install         # autostart and app entry; `builauncher uninstall` removes them
-    builauncher --daemon &       # this session only; later sessions start it by themselves
+    builauncher --daemon &      # this session only; later sessions start it by themselves
 
 `install` writes two freedesktop.org entries, so any XDG desktop reads them:
 
