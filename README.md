@@ -14,10 +14,11 @@ installed app.
 
 Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries.
 
-builauncher uses BUI from PyPI (`blenderui`). It also needs PySide6, PyGObject and
+builauncher uses BUI from PyPI (`blenderui`). On Linux it also needs PySide6, PyGObject and
 `layer-shell-qt` from your distribution (on Fedora: `python3-pyside6`,
 `python3-gobject`, `layer-shell-qt`). `pip install .[wheels]` gets PySide6 and PyGObject
-from PyPI instead; PyGObject then builds from source.
+from PyPI instead; PyGObject then builds from source. On Windows, `pip install .` gets
+everything it needs.
 
 ## Use
 
@@ -46,7 +47,8 @@ from PyPI instead; PyGObject then builds from source.
 
 ## Config
 
-Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml` and edit it.
+Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml` and edit it. On Windows,
+copy `builauncher/default-windows.toml` to `%APPDATA%\builauncher\menu.toml`.
 
     shortcut = "CTRL+ALT+space"   # asked for at the first start
     scale = 1.0                   # size of the pie and the search
@@ -89,6 +91,23 @@ pointer.
 
 `install` writes an XDG autostart entry. Sway and Hyprland do not run those, so add
 `builauncher daemon` to their startup config.
+
+### Windows
+
+The commands and the config are the same. Underneath:
+
+| Linux | Windows |
+| --- | --- |
+| Shortcut from the XDG portal | `RegisterHotKey`; a timer polls `GetAsyncKeyState` for the release, so hold and release still works. If another app holds the shortcut, the daemon says so. |
+| `install` writes an XDG autostart entry | `install` adds a value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` that starts the daemon with `pythonw`, so no console opens. |
+| Unix socket in `$XDG_RUNTIME_DIR` | Named pipe `\\.\pipe\builauncher` |
+| Apps from `.desktop` files | Apps from Start Menu shortcuts |
+| `xdg-open`, `trash:///` | `explorer`, `shell:RecycleBinFolder` |
+| Layer-shell overlay | Frameless, always-on-top window at the pointer |
+
+The Windows default menu uses Windows Terminal (`wt`), sends the media keys through
+PowerShell, and locks, sleeps, restarts and shuts down with `rundll32` and `shutdown`.
+Sleep hibernates instead when hibernation is on.
 
 ## Development
 
