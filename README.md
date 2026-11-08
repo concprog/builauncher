@@ -16,14 +16,7 @@ Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries. Ru
 from an installed copy, not from `uvx`: the environment `uvx` makes is temporary.
 
 All dependencies come from PyPI: BUI (`blenderui`), PySide6, RapidFuzz, and on Linux
-jeepney for D-Bus. On Wayland, the centred overlay also needs `layer-shell-qt` and a
-PySide6 built against the same Qt, which only your distribution provides. To use it,
-install into an environment that sees the system packages (on Fedora: `python3-pyside6`
-and `layer-shell-qt`):
-
-    pipx install --system-site-packages builauncher
-
-Without it, the menu opens as a normal frameless window.
+jeepney for D-Bus. Nothing comes from your distribution.
 
 ## Use
 
@@ -92,8 +85,11 @@ which KDE Plasma, GNOME 48 and later, and Hyprland provide. After the first star
 the shortcut in the desktop's shortcut settings. On a desktop without the portal, bind the
 `builauncher` command to a key yourself.
 
-On Wayland the menu is a centred layer-shell overlay with no frame. On X11 it opens at the
-pointer.
+The menu opens under the pointer. On Wayland an app cannot place its window or read the
+pointer, so builauncher covers the screen with a transparent window and draws the menu
+where the pointer enters it. That window is a layer-shell overlay when Qt has the
+layer-shell plugin, and a full-screen window otherwise, so it works on any compositor,
+GNOME included. On X11 the window moves to the pointer.
 
 `install` writes an XDG autostart entry. Sway and Hyprland do not run those, so add
 `builauncher daemon` to their startup config.
@@ -109,7 +105,7 @@ The commands and the config are the same. Underneath:
 | Unix socket in `$XDG_RUNTIME_DIR` | Named pipe `\\.\pipe\builauncher` |
 | Apps from `.desktop` files | Apps from Start Menu shortcuts |
 | `xdg-open`, `trash:///` | `explorer`, `shell:RecycleBinFolder` |
-| Layer-shell overlay | Frameless, always-on-top window at the pointer |
+| Transparent full-screen window, menu under the pointer | Frameless, always-on-top window at the pointer |
 
 The Windows default menu uses Windows Terminal (`wt`), sends the media keys through
 PowerShell, and locks, sleeps, restarts and shuts down with `rundll32` and `shutdown`.
