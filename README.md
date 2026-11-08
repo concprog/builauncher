@@ -8,17 +8,22 @@ flick towards an item, or type to search every command and installed app.
 
 ## Install
 
-    pip install .                 # or: pipx install --system-site-packages .
+    uv tool install builauncher   # or: pipx install builauncher, or uvx builauncher to try it
     builauncher install           # start the daemon at every login
     builauncher daemon &          # start it now, for this session
 
-Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries.
+Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries. Run `install`
+from an installed copy, not from `uvx`: the environment `uvx` makes is temporary.
 
-builauncher uses BUI from PyPI (`blenderui`). On Linux it also needs PySide6, PyGObject and
-`layer-shell-qt` from your distribution (on Fedora: `python3-pyside6`,
-`python3-gobject`, `layer-shell-qt`). `pip install .[wheels]` gets PySide6 and PyGObject
-from PyPI instead; PyGObject then builds from source. On Windows, `pip install .` gets
-everything it needs.
+All dependencies come from PyPI: BUI (`blenderui`), PySide6, RapidFuzz, and on Linux
+jeepney for D-Bus. On Wayland, the centred overlay also needs `layer-shell-qt` and a
+PySide6 built against the same Qt, which only your distribution provides. To use it,
+install into an environment that sees the system packages (on Fedora: `python3-pyside6`
+and `layer-shell-qt`):
+
+    pipx install --system-site-packages builauncher
+
+Without it, the menu opens as a normal frameless window.
 
 ## Use
 
