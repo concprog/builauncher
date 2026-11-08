@@ -7,6 +7,7 @@ from builauncher.config import DEFAULT, load
 from builauncher.fuzzy import score, search
 from builauncher.launcher import Launcher
 from builauncher.menu import Action, actions, parse
+from builauncher.places import places
 
 
 def test_default_config_loads():
@@ -55,7 +56,7 @@ def test_flick_and_back():
         launcher.reset()
         rows()
         assert not launcher.flick(5, 0)  # too short
-        assert launcher.flick(-100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]
+        assert launcher.flick(-100, -100) and rows()[:2] == ["Back", "Home"]  # NW: Places
         launcher.click_empty(*launcher._center)
         assert rows()[0] == "Terminal" and not closed
         launcher.click_empty(*launcher._center)
@@ -64,3 +65,8 @@ def test_flick_and_back():
         rows()
         launcher.flick(-100, 0)
         assert ran == ["konsole"]
+
+
+def test_places_fit_a_sub_pie():
+    menu = places()
+    assert menu.items[-1].name == "Trash" and len(menu.items) <= 7  # one slot for Back

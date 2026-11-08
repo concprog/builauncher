@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from gi.repository import GLib
+import buipy
 from PySide6.QtWidgets import QApplication
 
 from .apps import apps
@@ -26,6 +27,7 @@ def main() -> int:
     qt = QApplication(sys.argv[:1])
     qt.setQuitOnLastWindowClosed(not daemon)
     cfg = load(paths[0] if paths else None)
+    buipy.kit_set_scale(cfg.scale)  # before any size is taken from the kit unit
     entries = [*actions(cfg.menu), *(("App", a) for a in (apps() if cfg.apps else ()))]
     launcher = Launcher(cfg.menu, entries, lambda: window.dismiss())
     window = Overlay(launcher, daemon)
