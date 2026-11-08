@@ -3,6 +3,7 @@ import os
 import socket
 from pathlib import Path
 
+APP_ID = "io.github.buiemenu"  # the .desktop file name; the shortcut portal knows the app by it
 TRIGGER = b"trigger"
 
 

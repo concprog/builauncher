@@ -3,7 +3,7 @@ name = "buiemenu"
 version = "0.1.0"
 description = "Pie-menu launcher with type-to-search, on BUI"
 requires-python = ">=3.12"
-dependencies = ["blenderui", "PySide6>=6.6", "numpy"]
+dependencies = ["blenderui", "PySide6>=6.6", "numpy", "PyGObject"]
 
 [project.scripts]
 buiemenu = "buiemenu.__main__:main"

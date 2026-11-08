@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+from gi.repository import GLib
 from PySide6.QtWidgets import QApplication
 
 from .apps import apps
@@ -10,6 +11,7 @@ from .config import load
 from .daemon import serve
 from .launcher import Launcher
 from .menu import actions
+from .shortcut import bind
 from .window import Overlay
 
 
@@ -24,9 +26,14 @@ def main() -> int:
     entries = [*actions(cfg.menu), *(("App", a) for a in (apps() if cfg.apps else ()))]
     launcher = Launcher(cfg.menu, entries, lambda: window.dismiss())
     window = Overlay(launcher, daemon)
-    server = serve(window.trigger) if daemon else None  # noqa: F841 (keeps the server alive)
     if not daemon:
         window.summon()
+        return qt.exec()
+    server = serve(window.trigger)  # noqa: F841 (kept alive)
+    try:
+        portal = bind(cfg.shortcut, window.trigger, window.release)  # noqa: F841 (kept alive)
+    except GLib.Error as error:
+        print(f"buiemenu: no global shortcut ({error.message}); bind `buiemenu` in the desktop", file=sys.stderr)
     return qt.exec()
 
 
