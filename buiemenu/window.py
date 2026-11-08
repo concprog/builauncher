@@ -32,7 +32,7 @@ KEYSYMS = {
 MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModifier, 2),
         (Qt.KeyboardModifier.AltModifier, 4))
 FRAME_MS = 16
-HOLD_S, DOUBLE_S = 0.25, 0.4  # trigger key: held longer is a hold, a second press sooner is a double tap
+HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
 DRAG_PX = 15  # Kando's drag threshold
 # LayerShellQt::Window: no anchors (compositor centres it), overlay layer, exclusive keyboard
 LAYER_SHELL = "libLayerShellQtInterface.so.6"
