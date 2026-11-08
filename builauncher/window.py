@@ -34,6 +34,7 @@ MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModi
 FRAME_MS = 16
 HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
 DRAG_PX = 15  # Kando's drag threshold
+FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # Kando's fade durations; also between pie and search
 # LayerShellQt::Window: no anchors (compositor centres it), overlay layer, exclusive keyboard
 LAYER_SHELL = "libLayerShellQtInterface.so.6"
 LAYER_GET = "_ZN12LayerShellQt6Window3getEP7QWindow"
@@ -94,12 +95,13 @@ class Overlay(QWidget):
         self._keys: set[int] = set()  # keys pressed while shown; a release of another is the trigger
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
+        self._fade_at, self._fading_out, self._searching = 0.0, False, False
         if QGuiApplication.platformName() == "wayland":
             layer_surface(self)
 
     def trigger(self) -> None:
         """The global shortcut fired."""
-        if not self.isVisible():
+        if not self.isVisible() or self._fading_out:
             return self.summon()
         if time.monotonic() - self._shown_at < DOUBLE_S:
             return self._launcher.search_only()
@@ -107,15 +109,28 @@ class Overlay(QWidget):
 
     def summon(self) -> None:
         self._shown_at, self._keys, self._stroke, self._pressed_at = time.monotonic(), set(), None, None
+        self._fade_at, self._fading_out = self._shown_at, False
         self._launcher.reset()
         self._place()
         self.show()
         self.activateWindow()
 
     def dismiss(self) -> None:
+        """Fade out, then hide."""
+        if self.isVisible() and not self._fading_out:
+            self._fade_at, self._fading_out = time.monotonic(), True
+            self.update()
+
+    def _hide(self) -> None:
+        self._fading_out = False
         self.hide()
         if not self._daemon:
             QGuiApplication.quit()
+
+    def _opacity(self) -> float:
+        """0..1, eased out."""
+        t = min((time.monotonic() - self._fade_at) / (FADE_OUT_S if self._fading_out else FADE_IN_S), 1.0)
+        return 1 - t * t if self._fading_out else 1 - (1 - t) ** 2
 
     def _place(self) -> None:
         """At the pointer on X11. On Wayland, the compositor centres the layer surface."""
@@ -136,13 +151,19 @@ class Overlay(QWidget):
         self._tick.stop()  # no frames while hidden
 
     def _refresh(self) -> None:
-        if self._launcher.app.ctx.needs_render():
+        if self._fading_out and self._opacity() <= 0:
+            return self._hide()
+        if self._launcher.app.ctx.needs_render() or self._fading_out or self._opacity() < 1:
             self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
         w, h = self._launcher.size
         raster = self._launcher.app.render_raster(w, h)
         px = matte(raster.rgb32(), w, h, self._launcher.opaque(), self._bg)
+        if self._launcher.searching != self._searching and not self._fading_out:
+            self._searching, self._fade_at = self._launcher.searching, time.monotonic()  # pie <-> search
+        if (alpha := round(self._opacity() * 256)) < 256:
+            px = (px.astype(np.uint16) * alpha >> 8).astype(np.uint8)  # premultiplied: scale all channels
         image = QImage(px.data, w, h, w * 4, QImage.Format.Format_ARGB32_Premultiplied)
         image.setDevicePixelRatio(self._dpr)
         self._image = (px, image)  # QImage borrows px's memory
@@ -198,6 +219,8 @@ class Overlay(QWidget):
             return self.dismiss()  # before BUI: its pie and search field take Escape for themselves
         if not e.isAutoRepeat():
             self._keys.add(e.key())
+        if self._launcher.searching and e.key() == Qt.Key.Key_Backspace and not self._launcher.field.value:
+            return self._launcher.reset()  # backspace on an empty search: back to the pie
         if self._launcher.searching and e.key() in (Qt.Key.Key_Up, Qt.Key.Key_Down):
             self._launcher.step(1 if e.key() == Qt.Key.Key_Down else -1)
             return self._refresh()
