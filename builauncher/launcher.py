@@ -7,14 +7,14 @@ import math
 from collections.abc import Callable
 
 import buipy
-from bui.components import App, ListView, MenuItem, PieMenu, SearchField
+from bui.components import App, ListView, MenuItem, PieMenu, SearchField, Separator
 from bui.components.core import EV_SUBMIT
 
 from .apps import run
 from .fuzzy import search
 from .menu import Action, Menu
 
-ROWS = 8
+ROWS = 6  # results below the pie centre fit in the window's lower half
 # window in kit units: the search row, then the pie (radius 5 units, items about 6 wide)
 WIDTH, SEARCH_HEIGHT, PIE_HEIGHT = 24, 2, 15
 Entry = tuple[str, Action]  # (menu path or "App", action)
@@ -48,7 +48,11 @@ class Launcher:
         self.size = (WIDTH * u, (SEARCH_HEIGHT + PIE_HEIGHT) * u)
         self._center = (self.size[0] // 2, self.size[1] // 2)
         # the search row and its results show in place of the pie
-        self.app = App("builauncher", self.size, self.field, self._list)
+        self._gap = Separator(0)  # puts the search bar on the pie centre
+        self.app = App("builauncher", self.size, self._gap, self.field, self._list)
+        self.app.render_raster(*self.size)  # lay out once to measure the bar
+        _, y, _, h = self.field.rect
+        self._gap.set("factor", (self._center[1] - h // 2 - y) / u)
         self.app.bind("Tab", self.reset)
 
     @property
