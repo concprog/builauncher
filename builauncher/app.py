@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-from gi.repository import GLib
 import buipy
 from PySide6.QtWidgets import QApplication
 
@@ -39,8 +38,8 @@ def main() -> int:
     server = serve(window.trigger)  # noqa: F841 (kept alive)
     try:
         portal = bind(cfg.shortcut, window.trigger, window.release)  # noqa: F841 (kept alive)
-    except GLib.Error as error:
-        print(f"builauncher: no global shortcut ({error.message}); bind `builauncher` in the desktop", file=sys.stderr)
+    except (OSError, ValueError) as error:
+        print(f"builauncher: no global shortcut ({error}); bind `builauncher` in the desktop", file=sys.stderr)
     return qt.exec()
 
 

@@ -1,13 +1,13 @@
 """Load the menu from ~/.config/builauncher/menu.toml (or the bundled default)."""
-import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 from .menu import PIE_SLOTS, Menu, parse
 from .places import places
+from .system import WINDOWS, config_dir
 
-DEFAULT = Path(__file__).with_name("default.toml")
+DEFAULT = Path(__file__).with_name("default-windows.toml" if WINDOWS else "default.toml")
 SHORTCUT = "CTRL+ALT+space"  # XDG shortcuts format
 SCALE = 1.0  # BUI ui scale; 1 is Blender's default
 
@@ -21,8 +21,7 @@ class Config:
 
 
 def user_path() -> Path:
-    base = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
-    return Path(base) / "builauncher" / "menu.toml"
+    return config_dir() / "menu.toml"
 
 
 def load(path: Path | None = None) -> Config:

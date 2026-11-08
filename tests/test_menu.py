@@ -8,6 +8,7 @@ from builauncher.fuzzy import score, search
 from builauncher.launcher import Launcher
 from builauncher.menu import Action, actions, parse
 from builauncher.places import places
+from builauncher.shortcut_windows import parse as parse_shortcut
 
 
 def test_default_config_loads():
@@ -78,3 +79,13 @@ def test_places_fit_a_sub_pie():
     found = places()
     assert found[-1].name == "Trash" and len(found) <= 7  # one slot for Back
     assert parse({"name": "Files", "pie": "places"}, {"places": found}).items == found
+
+
+def test_windows_default_and_shortcut():
+    paths = {f"{p}:{a.name}" for p, a in actions(load(DEFAULT.with_name("default-windows.toml")).menu)}
+    assert "System / Power:Restart" in paths
+    assert parse_shortcut("CTRL+ALT+space") == (0x3, 0x20)
+    assert parse_shortcut("LOGO+F12") == (0x8, 0x7B)
+    for bad in ("HYPER+a", "CTRL+nope"):
+        with pytest.raises(ValueError):
+            parse_shortcut(bad)

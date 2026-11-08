@@ -1,14 +1,15 @@
-"""One running launcher: listen on a Unix socket for triggers from `builauncher`."""
+"""One running launcher: listen on a Unix socket (a named pipe on Windows) for triggers."""
 from collections.abc import Callable
 
 from PySide6.QtNetwork import QLocalServer
 
-from .trigger import TRIGGER, socket_path
+from .system import server_name
+from .trigger import TRIGGER
 
 
 def serve(on_trigger: Callable[[], None]) -> QLocalServer:
     """Listen for triggers. Keep the result alive."""
-    path = str(socket_path())
+    path = server_name()
     QLocalServer.removeServer(path)  # a socket left by a crash
     server = QLocalServer()
     if not server.listen(path):

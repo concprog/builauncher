@@ -10,9 +10,9 @@ import buipy
 from bui.components import App, Box, ListView, MenuItem, PieMenu, SearchField, Separator
 from bui.components.core import EV_SUBMIT
 
-from .apps import run
 from .fuzzy import search
 from .menu import Action, Menu
+from .system import run
 
 SEARCH_PAD = 8  # px around the search bar, on Blender's box background
 ROWS = 6  # results below the pie centre fit in the window's lower half

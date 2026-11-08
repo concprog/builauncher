@@ -1,6 +1,8 @@
-"""`builauncher install`: XDG autostart for the daemon, and the .desktop file the shortcut portal needs.
+"""`builauncher install`: start the daemon at login.
 
+Linux: an XDG autostart entry, and the .desktop file the shortcut portal knows the app by.
 Both are freedesktop.org standards, so KDE, GNOME, Xfce, Cinnamon and others read them.
+Windows: a value under the user's Run registry key, with pythonw so no console opens.
 """
 import os
 import shutil
@@ -8,8 +10,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .trigger import APP_ID
+from .system import APP_ID, WINDOWS
 
+if WINDOWS:
+    import winreg
+
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 ENTRY = """[Desktop Entry]
 Type=Application
 Name=builauncher
@@ -35,6 +41,31 @@ def command() -> str:
 
 
 def install() -> None:
+    install_windows() if WINDOWS else install_xdg()
+
+
+def uninstall() -> None:
+    uninstall_windows() if WINDOWS else uninstall_xdg()
+
+
+def install_windows() -> None:
+    pythonw = Path(sys.executable).with_name("pythonw.exe")
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+        winreg.SetValueEx(key, APP_ID, 0, winreg.REG_SZ, f'"{pythonw}" -m builauncher daemon')
+    print(f"added {APP_ID} to HKCU\\{RUN_KEY}")
+    print("start it now with: builauncher daemon   (it starts by itself at the next sign-in)")
+
+
+def uninstall_windows() -> None:
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+        try:
+            winreg.DeleteValue(key, APP_ID)
+        except FileNotFoundError:
+            pass  # not installed
+    print(f"removed {APP_ID} from HKCU\\{RUN_KEY}")
+
+
+def install_xdg() -> None:
     app, autostart = paths()
     for path, args in ((app, ""), (autostart, " daemon")):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +76,7 @@ def install() -> None:
     print("start it now with: builauncher daemon &   (it starts by itself at the next login)")
 
 
-def uninstall() -> None:
+def uninstall_xdg() -> None:
     for path in paths():
         path.unlink(missing_ok=True)
         print(f"removed {path}")

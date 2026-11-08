@@ -1,9 +1,11 @@
 """The `builauncher` command. Qt loads only in the process that shows the menu."""
 import argparse
 import os
+import subprocess
 import sys
 
 from .install import install, uninstall
+from .system import WINDOWS
 from .trigger import send_trigger
 
 
@@ -31,7 +33,10 @@ def main() -> int:
             if not daemon and send_trigger():
                 return 0
             config = [args.config] if getattr(args, "config", None) else []
-            os.execv(sys.executable, [sys.executable, "-m", "builauncher.app", *(["--daemon"] if daemon else []), *config])
+            argv = [sys.executable, "-m", "builauncher.app", *(["--daemon"] if daemon else []), *config]
+            if WINDOWS:  # Windows execv does not quote arguments with spaces
+                return subprocess.call(argv)
+            os.execv(sys.executable, argv)
     return 0
 
 
