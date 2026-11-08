@@ -28,9 +28,10 @@ def user_path() -> Path:
 def load(path: Path | None = None) -> Config:
     path = path or (user_path() if user_path().exists() else DEFAULT)
     raw = tomllib.loads(path.read_text())
-    items = (*map(parse, raw.get("item", [])), *((places(),) if raw.get("places", True) else ()))
+    found = places()
+    items = tuple(parse(item, found) for item in raw.get("item", []))
     if not 0 < len(items) <= PIE_SLOTS:
-        raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS} items, Places included")
+        raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS} items")
     scale = float(raw.get("scale", SCALE))
     if not 0.5 <= scale <= 4:
         raise ValueError(f"{path}: scale must be 0.5 to 4")

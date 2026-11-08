@@ -1,12 +1,12 @@
 # Copy to ~/.config/builauncher/menu.toml and edit.
-# An item has either `exec` (a command) or 1 to 8 `[[...item]]` children (a sub-pie).
+# An item has one of: `exec` (a command), 1 to 8 `[[...item]]` children (a sub-pie),
+# or `places = true` (a sub-pie of home, documents, downloads, ... and the trash).
 # `icon` is a Blender icon name (CONSOLE, FILE_FOLDER, PLAY, ...).
 apps = true  # also search installed .desktop apps
 # global shortcut, asked of the desktop at the first daemon start (XDG GlobalShortcuts portal).
 # after that, change it in the desktop's shortcut settings.
 shortcut = "CTRL+ALT+space"
-scale = 1.5    # size of the pie and the search (BUI ui scale)
-places = true  # a Places sub-pie: home, documents, downloads, ... and the trash
+scale = 1.5  # size of the pie and the search (BUI ui scale)
 
 [[item]]
 name = "Terminal"
@@ -17,6 +17,11 @@ exec = "konsole"
 name = "Browser"
 icon = "WORLD"
 exec = "xdg-open https://"
+
+[[item]]
+name = "Files"
+icon = "FILE_FOLDER"
+places = true
 
 [[item]]
 name = "Media"

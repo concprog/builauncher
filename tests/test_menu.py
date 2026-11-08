@@ -56,7 +56,7 @@ def test_flick_and_back():
         launcher.reset()
         rows()
         assert not launcher.flick(5, 0)  # too short
-        assert launcher.flick(-100, -100) and rows()[:2] == ["Back", "Home"]  # NW: Places
+        assert launcher.flick(-100, -100) and rows()[1:] == ["Lock", "Suspend", "Power"]
         launcher.click_empty(*launcher._center)
         assert rows()[0] == "Terminal" and not closed
         launcher.click_empty(*launcher._center)
@@ -68,5 +68,9 @@ def test_flick_and_back():
 
 
 def test_places_fit_a_sub_pie():
-    menu = places()
-    assert menu.items[-1].name == "Trash" and len(menu.items) <= 7  # one slot for Back
+    found = places()
+    assert found[-1].name == "Trash" and len(found) <= 7  # one slot for Back
+    files = parse({"name": "Files", "places": True}, found)
+    assert files.items == found
+    with pytest.raises(ValueError):
+        parse({"name": "Files", "places": True, "exec": "x"}, found)

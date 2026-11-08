@@ -58,12 +58,12 @@ keyboard (needs `layer-shell-qt`). On X11 it opens at the pointer.
 ## Config
 
 Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml`. An item has
-either `exec` or 1 to 8 child `item` tables (BUI's pie has 8 slots). `icon`
+one of `exec`, 1 to 8 child `item` tables (BUI's pie has 8 slots), or `places = true`. `icon`
 is a Blender icon name. Bad items are rejected at load.
 
 - `scale` (default 1.5) sizes the pie and the search. It is BUI's UI scale.
-- `places` (default true) adds a Places sub-pie: Home, Documents, Downloads, Music,
-  Pictures, Videos and the Trash (Desktop too, in search). Qt's `QStandardPaths` finds
+- An item with `places = true` is a sub-pie of Home, Documents, Downloads, Music,
+  Pictures, Videos and the Trash (Desktop too, in search). The default Files item is one. Qt's `QStandardPaths` finds
   the folders: XDG user-dirs on Linux, Known Folders on Windows, and the standard
   folders on macOS. The trash has no standard path; on Linux it is `trash:///`.
 
@@ -82,7 +82,7 @@ that would let builauncher use buipy alone.
 - [x] Frameless translucent window (Qt host, alpha matted from BUI's raster)
 - [x] Window at the pointer on X11; on Wayland a centred, borderless layer-shell overlay
 - [x] Daemon with a fast trigger client
-- [x] Places from the platform's standard folders, and a `scale` setting
+- [x] Files sub-pie of the platform's standard folders, and a `scale` setting
 - [x] `builauncher install`: XDG autostart, and a global shortcut from the portal
 - [x] Gestures: hold and release, double tap, drag pick, centre back, dismissal
 - [ ] Up and Down through results while typing (BUI's field takes those keys)

@@ -22,18 +22,22 @@ class Menu:
 Item = Action | Menu
 
 
-def parse(raw: dict) -> Item:
-    """Make an item from a config table. Raises ValueError on a bad table."""
+def parse(raw: dict, places: tuple[Action, ...] = ()) -> Item:
+    """Make an item from a config table; `places = true` makes a sub-pie of places.
+    Raises ValueError on a bad table."""
     name, icon = raw.get("name"), raw.get("icon", "")
     if not name:
         raise ValueError(f"item without name: {raw}")
-    match raw.get("exec"), raw.get("item"):
-        case str(cmd), None:
+    match raw.get("exec"), raw.get("item"), raw.get("places", False):
+        case str(cmd), None, False:
             return Action(name, cmd, icon)
-        case None, list(children) if 0 < len(children) <= PIE_SLOTS:
-            return Menu(name, tuple(map(parse, children)), icon)
+        case None, list(children), False if 0 < len(children) <= PIE_SLOTS:
+            return Menu(name, tuple(parse(c, places) for c in children), icon)
+        case None, None, True:
+            return Menu(name, places, icon)
         case _:
-            raise ValueError(f"item {name!r} needs exactly one of 'exec' or 1 to {PIE_SLOTS} 'item' tables")
+            raise ValueError(f"item {name!r} needs exactly one of 'exec', 'places = true' "
+                             f"or 1 to {PIE_SLOTS} 'item' tables")
 
 
 def actions(menu: Menu, path: str = "") -> Iterator[tuple[str, Action]]:
