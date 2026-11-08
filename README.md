@@ -61,7 +61,7 @@ Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml`. An item ha
 one of `exec`, 1 to 8 child `item` tables (BUI's pie has 8 slots), or `places = true`. `icon`
 is a Blender icon name. Bad items are rejected at load.
 
-- `scale` (default 1.5) sizes the pie and the search. It is BUI's UI scale.
+- `scale` (default 1.25) sizes the pie and the search. It is BUI's UI scale.
 - An item with `places = true` is a sub-pie of Home, Documents, Downloads, Music,
   Pictures, Videos and the Trash (Desktop too, in search). The default Files item is one. Qt's `QStandardPaths` finds
   the folders: XDG user-dirs on Linux, Known Folders on Windows, and the standard

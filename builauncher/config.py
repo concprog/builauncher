@@ -9,7 +9,7 @@ from .places import places
 
 DEFAULT = Path(__file__).with_name("default.toml")
 SHORTCUT = "CTRL+ALT+space"  # XDG shortcuts format
-SCALE = 1.5  # BUI ui scale; 1 is Blender's default
+SCALE = 1.25  # BUI ui scale; 1 is Blender's default
 
 
 @dataclass(frozen=True, slots=True)
