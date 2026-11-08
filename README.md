@@ -48,7 +48,7 @@ Gestures (from Kando and Blender's pie):
 | Hotkey while open | Close. |
 | Mouse drag from empty space | Pick the item in the drag direction (Kando's marking mode). |
 | Click the pie centre | Back to the parent pie, or close at the top. |
-| Click outside the widgets, Escape, focus lost | Close. |
+| Escape or Alt+F4 (in the pie or the search), click outside the widgets, focus lost | Close. |
 | Typing | Fuzzy search over menu actions and `.desktop` apps. Return runs the top hit. |
 | Tab | Reopen the top pie. |
 
@@ -61,6 +61,11 @@ Copy `builauncher/default.toml` to `~/.config/builauncher/menu.toml`. An item ha
 either `exec` or 1 to 8 child `item` tables (BUI's pie has 8 slots). `icon`
 is a Blender icon name. Bad items are rejected at load.
 
+- `scale` (default 1.5) sizes the pie and the search. It is BUI's UI scale.
+- `places` (default true) adds a Places sub-pie: Home, Documents, Downloads, Music,
+  Pictures, Videos and the Trash (Desktop too, in search). Qt's `QStandardPaths` finds
+  the folders: XDG user-dirs on Linux, Known Folders on Windows, and the standard
+  folders on macOS. The trash has no standard path; on Linux it is `trash:///`.
 
 ## BUI
 
@@ -77,6 +82,7 @@ that would let builauncher use buipy alone.
 - [x] Frameless translucent window (Qt host, alpha matted from BUI's raster)
 - [x] Window at the pointer on X11; on Wayland a centred, borderless layer-shell overlay
 - [x] Daemon with a fast trigger client
+- [x] Places from the platform's standard folders, and a `scale` setting
 - [x] `builauncher install`: XDG autostart, and a global shortcut from the portal
 - [x] Gestures: hold and release, double tap, drag pick, centre back, dismissal
 - [ ] Up and Down through results while typing (BUI's field takes those keys)
