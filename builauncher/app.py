@@ -33,7 +33,7 @@ def main() -> int:
     try:
         portal = bind(cfg.shortcut, window.trigger, window.release)  # noqa: F841 (kept alive)
     except GLib.Error as error:
-        print(f"buiemenu: no global shortcut ({error.message}); bind `buiemenu` in the desktop", file=sys.stderr)
+        print(f"builauncher: no global shortcut ({error.message}); bind `builauncher` in the desktop", file=sys.stderr)
     return qt.exec()
 
 

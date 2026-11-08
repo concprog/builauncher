@@ -1,4 +1,4 @@
-# Copy to ~/.config/buiemenu/menu.toml and edit.
+# Copy to ~/.config/builauncher/menu.toml and edit.
 # An item has either `exec` (a command) or 1 to 8 `[[...item]]` children (a sub-pie).
 # `icon` is a Blender icon name (CONSOLE, FILE_FOLDER, PLAY, ...).
 apps = true  # also search installed .desktop apps

@@ -1,4 +1,4 @@
-"""Load the menu from ~/.config/buiemenu/menu.toml (or the bundled default)."""
+"""Load the menu from ~/.config/builauncher/menu.toml (or the bundled default)."""
 import os
 import tomllib
 from dataclasses import dataclass
@@ -19,7 +19,7 @@ class Config:
 
 def user_path() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
-    return Path(base) / "buiemenu" / "menu.toml"
+    return Path(base) / "builauncher" / "menu.toml"
 
 
 def load(path: Path | None = None) -> Config:
@@ -28,5 +28,5 @@ def load(path: Path | None = None) -> Config:
     items = raw.get("item", [])
     if not 0 < len(items) <= PIE_SLOTS:
         raise ValueError(f"{path}: the top menu needs 1 to {PIE_SLOTS} items")
-    return Config(Menu("buiemenu", tuple(map(parse, items))), raw.get("apps", True),
+    return Config(Menu("builauncher", tuple(map(parse, items))), raw.get("apps", True),
                   raw.get("shortcut", SHORTCUT))

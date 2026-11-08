@@ -1,25 +1,25 @@
-# What BUI could do for buiemenu
+# What BUI could do for builauncher
 
-buiemenu does not change BUI. Each item below is code in buiemenu that works
+builauncher does not change BUI. Each item below is code in builauncher that works
 around something BUI does not have. If BUI had it, the code could go, and with
 items 1 to 4 the PyQt host could go too.
 
 ## Gaps and their workarounds
 
-| # | BUI today | buiemenu's workaround | Cost |
+| # | BUI today | builauncher's workaround | Cost |
 | --- | --- | --- | --- |
 | 1 | The Linux hosts do not implement `alpha`. The Wayland buffer is XRGB8888, and X11 uses an opaque visual. | A Qt window. `window.matte` turns grey background pixels back into alpha. | Square corners show grey slivers, and grey widgets outside the widget rects become translucent. A numpy pass runs on every frame. |
 | 2 | The Linux hosts do not implement `override` (no frame) or `topmost`. | Qt `FramelessWindowHint`, `WindowStaysOnTopHint`, `Tool`. | Needs Qt. |
 | 3 | The Wayland host has only xdg-shell toplevels. KWin and tiling compositors tile them and place them. | layer-shell-qt, reached through ctypes (`window.layer_surface`). | Needs Qt, a C++ mangled symbol, and layer-shell-qt. |
 | 4 | Hosts do not hide and show a window without destroying it, and do not report focus loss to Python. | Qt `hide`, `show` and `focusOutEvent`. | Needs Qt. |
 | 5 | The pie picks on click only. Blender's pie also picks on release after a drag, and on hotkey release after `U.pie_tap_timeout`. | `Launcher.flick` presses and releases at the centre of the item in the stroke's direction. `Overlay` times the hold and tracks the stroke. | A second direction rule beside BUI's `pie_dir_hot`. |
-| 6 | No pie sub-menus. Blender calls `wm.call_menu_pie` from a pie item. | `Launcher.open_pie(path)` closes the pie and opens a new one, with a Back slot. | No animation between levels; buiemenu keeps the menu path itself. |
+| 6 | No pie sub-menus. Blender calls `wm.call_menu_pie` from a pie item. | `Launcher.open_pie(path)` closes the pie and opens a new one, with a Back slot. | No animation between levels; builauncher keeps the menu path itself. |
 | 7 | `PieMenu.show` opens at the context's pointer. | `ctx.set_pointer(centre)` before each `show`. | A fake pointer move. |
-| 8 | No hit test from Python. | `Launcher.opaque()` collects `field.rect`, the rows' `rect` and `ctx.menu_rows(-1)`, and `Overlay._on_widget` tests them. | buiemenu must know every widget it shows. |
+| 8 | No hit test from Python. | `Launcher.opaque()` collects `field.rect`, the rows' `rect` and `ctx.menu_rows(-1)`, and `Overlay._on_widget` tests them. | builauncher must know every widget it shows. |
 | 9 | `SearchField` has no `on_submit`. While it edits, it takes Up and Down. | `QueryField` sets `events` and catches `EV_SUBMIT`. | No keyboard navigation through results. |
 | 10 | Only `kit_set_theme("dark" or "light")`. No single theme colour can be set. | The matting needs the region background to be grey and asserts it. | A theme with a coloured background breaks the matting. |
 
-Out of scope for BUI: global shortcuts (the desktop binds `buiemenu`), the
+Out of scope for BUI: global shortcuts (the desktop binds `builauncher`), the
 daemon socket and the fuzzy search.
 
 ## Proposed BUI changelog

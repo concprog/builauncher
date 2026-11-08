@@ -1,4 +1,4 @@
-"""`buiemenu install`: XDG autostart for the daemon, and the .desktop file the shortcut portal needs.
+"""`builauncher install`: XDG autostart for the daemon, and the .desktop file the shortcut portal needs.
 
 Both are freedesktop.org standards, so KDE, GNOME, Xfce, Cinnamon and others read them.
 """
@@ -12,7 +12,7 @@ from .trigger import APP_ID
 
 ENTRY = """[Desktop Entry]
 Type=Application
-Name=buiemenu
+Name=builauncher
 Comment=Pie menu launcher
 Exec={exec}
 Icon=system-run
@@ -30,8 +30,8 @@ def paths() -> tuple[Path, Path]:
 
 
 def command() -> str:
-    """The installed `buiemenu` script, else this Python with -m."""
-    return shutil.which("buiemenu") or f"{sys.executable} -m buiemenu"
+    """The installed `builauncher` script, else this Python with -m."""
+    return shutil.which("builauncher") or f"{sys.executable} -m builauncher"
 
 
 def install() -> None:
@@ -42,7 +42,7 @@ def install() -> None:
         print(f"wrote {path}")
     if tool := shutil.which("update-desktop-database"):
         subprocess.run([tool, str(app.parent)], check=False)
-    print("start it now with: buiemenu --daemon &   (it starts by itself at the next login)")
+    print("start it now with: builauncher --daemon &   (it starts by itself at the next login)")
 
 
 def uninstall() -> None:

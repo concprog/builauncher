@@ -3,12 +3,12 @@ import os
 import socket
 from pathlib import Path
 
-APP_ID = "io.github.buiemenu"  # the .desktop file name; the shortcut portal knows the app by it
+APP_ID = "io.github.builauncher"  # the .desktop file name; the shortcut portal knows the app by it
 TRIGGER = b"trigger"
 
 
 def socket_path() -> Path:
-    return Path(os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/buiemenu-{os.getuid()}") / "buiemenu.sock"
+    return Path(os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/builauncher-{os.getuid()}") / "builauncher.sock"
 
 
 def send_trigger() -> bool:

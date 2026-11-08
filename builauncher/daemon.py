@@ -1,4 +1,4 @@
-"""One running launcher: listen on a Unix socket for triggers from `buiemenu`."""
+"""One running launcher: listen on a Unix socket for triggers from `builauncher`."""
 from collections.abc import Callable
 
 from PySide6.QtNetwork import QLocalServer

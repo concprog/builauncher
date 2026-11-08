@@ -1,7 +1,7 @@
 """A global shortcut from the XDG GlobalShortcuts portal, so no desktop's settings need it.
 
 The portal gives press and release, so a hold is exact. A non-sandboxed app first
-registers its app id, which must match an installed .desktop file (`buiemenu install`).
+registers its app id, which must match an installed .desktop file (`builauncher install`).
 Gio runs on Qt's GLib event loop.
 """
 import os
@@ -25,7 +25,7 @@ _tokens = count()
 def _request(bus: Gio.DBusConnection, method: str, signature: str, args: tuple, options: dict,
              done: Callable[[dict], None]) -> None:
     """Call a portal method that answers with a Request::Response signal. Options go last."""
-    token = f"buiemenu{os.getpid()}_{next(_tokens)}"
+    token = f"builauncher{os.getpid()}_{next(_tokens)}"
     sender = bus.get_unique_name()[1:].replace(".", "_")
     path = f"{PATH}/request/{sender}/{token}"
 
@@ -59,10 +59,10 @@ def bind(trigger: str, on_press: Callable[[], None], on_release: Callable[[], No
         bus.signal_subscribe(PORTAL, SHORTCUTS, signal, PATH, None, Gio.DBusSignalFlags.NONE, on_signal)
 
     def created(results: dict) -> None:
-        shortcut = (SHORTCUT_ID, {"description": GLib.Variant("s", "Open buiemenu"),
+        shortcut = (SHORTCUT_ID, {"description": GLib.Variant("s", "Open builauncher"),
                                   "preferred_trigger": GLib.Variant("s", trigger)})
         _request(bus, "BindShortcuts", "(oa(sa{sv})sa{sv})", (results["session_handle"], [shortcut], ""), {},
                  lambda _: None)
 
-    _request(bus, "CreateSession", "(a{sv})", (), {"session_handle_token": GLib.Variant("s", "buiemenu")}, created)
+    _request(bus, "CreateSession", "(a{sv})", (), {"session_handle_token": GLib.Variant("s", "builauncher")}, created)
     return bus

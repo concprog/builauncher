@@ -2,11 +2,11 @@ from unittest import mock
 
 import pytest
 
-from buiemenu.apps import read_entry
-from buiemenu.config import DEFAULT, load
-from buiemenu.fuzzy import score, search
-from buiemenu.launcher import Launcher
-from buiemenu.menu import Action, actions, parse
+from builauncher.apps import read_entry
+from builauncher.config import DEFAULT, load
+from builauncher.fuzzy import score, search
+from builauncher.launcher import Launcher
+from builauncher.menu import Action, actions, parse
 
 
 def test_default_config_loads():
@@ -49,7 +49,7 @@ def test_submenu_fits_pie():
 
 def test_flick_and_back():
     closed, ran = [], []
-    with mock.patch("buiemenu.launcher.run", ran.append):
+    with mock.patch("builauncher.launcher.run", ran.append):
         launcher = Launcher(load(DEFAULT).menu, [], lambda: closed.append(1))
         rows = lambda: (launcher.app.render_raster(*launcher.size), [t for t, _ in launcher.app.ctx.menu_rows(-1)])[1]
         launcher.reset()
