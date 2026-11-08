@@ -15,9 +15,6 @@ flick towards an item, or type to search every command and installed app.
 Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries. Run `install`
 from an installed copy, not from `uvx`: the environment `uvx` makes is temporary.
 
-All dependencies come from PyPI: BUI (`blenderui`), PySide6, RapidFuzz, and on Linux
-jeepney for D-Bus. Nothing comes from your distribution.
-
 ## Use
 
 | Input | Result |
@@ -117,3 +114,13 @@ Sleep hibernates instead when hibernation is on.
     uv sync
     uv run pytest
     uv build
+
+## Thanks
+
+- [Blender](https://www.blender.org), whose UI and pie menus BUI follows.
+- [BUI](https://github.com/ppmpreetham/BUI), which draws the menu.
+- [Kando](https://github.com/kando-menu/kando), for the gestures, timings and fades.
+- [PySide6](https://doc.qt.io/qtforpython-6/) (Qt for Python), for the window.
+- [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz), for the search.
+- [jeepney](https://gitlab.com/takluyver/jeepney), for D-Bus.
+- [numpy](https://numpy.org), for the transparency.
