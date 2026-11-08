@@ -1,7 +1,7 @@
 # builauncher
 
 A pie-menu launcher drawn with [BUI](https://github.com/ppmpreetham/BUI), Blender's UI as a
-library. Press a hotkey, flick towards an item, or type to search every command and
+library, in a Qt window through PySide6 (Qt for Python; PyQt is not used). Press a hotkey, flick towards an item, or type to search every command and
 installed app.
 
 ![The pie, and a search for "p"](assets/screenshot.png)

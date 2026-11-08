@@ -4,7 +4,7 @@ import pytest
 
 from builauncher.apps import read_entry
 from builauncher.config import DEFAULT, load
-from builauncher.fuzzy import score, search
+from builauncher.fuzzy import search
 from builauncher.launcher import Launcher
 from builauncher.menu import Action, actions, parse
 from builauncher.places import places
@@ -30,9 +30,9 @@ def test_bad_items_rejected(raw):
         parse(raw, PIES)
 
 
-def test_fuzzy_prefers_word_starts():
-    assert score("zz", "abc") is None
-    assert score("ff", "firefox") is not None
+def test_fuzzy_search():
+    assert search("zz", ["abc"], str) == []
+    assert search("firfox", ["Firefox", "Files"], str)[0] == "Firefox"
     names = ["Shut down", "Suspend", "System Settings"]
     assert search("sd", names, str)[0] == "Shut down"
     assert search("sus", names, str)[0] == "Suspend"
