@@ -11,6 +11,9 @@ from builauncher.launcher import Launcher
 from builauncher.items.menu import Action, actions, parse
 from builauncher.items.places import places
 from builauncher.shortcut_windows import parse as parse_shortcut
+from builauncher.window import background, matte
+
+import numpy as np
 
 
 def test_default_config_loads():
@@ -138,6 +141,21 @@ def test_places_fit_a_sub_pie():
     found = places()
     assert found[-1].name == "Trash" and len(found) <= 7  # one slot for Back
     assert parse({"name": "Files", "pie": "places"}, {"places": found}).items == found
+
+
+def test_matte_shadow_is_transparent():
+    # regression: the optimized matte zeroed the pixels before reading them, so every
+    # shadow pixel came out opaque black (a black background around the pie)
+    launcher = Launcher(load(DEFAULT).menu, [], lambda: None)
+    launcher.reset()
+    w, h = launcher.size
+    px = matte(launcher.app.render_raster(w, h).rgb32(), w, h, launcher.opaque(), background())
+    assert px.dtype == np.uint8 and px.shape == (h, w, 4)
+    corner = px[2, 2]  # off every item: pure shadow
+    assert corner.tolist() == [0, 0, 0, 0], corner
+    assert int((px[..., 3] == 255).sum()) < h * w // 2  # the menu, not the whole window
+    item = next(iter(launcher.opaque()))
+    assert px[item[1] + item[3] // 2, item[0] + item[2] // 2][3] == 255  # items are opaque
 
 
 def test_windows_default_and_shortcut():

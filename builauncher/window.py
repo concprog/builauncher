@@ -77,10 +77,12 @@ def matte(bgrx: bytes, w: int, h: int, opaque: Iterable[Rect], bg: int) -> np.nd
     shadow = (b == g) & (g == r) & (r <= bg)
     for x, y, rw, rh in opaque:
         shadow[max(y, 0):y + rh, max(x, 0):x + rw] = False
+    # r * 255 overflows a byte where the pointer is not: uint16 holds it, where() discards it.
+    # Alpha comes from the original pixels: the word store below zeroes r's bytes, so it goes first
+    alpha = np.where(shadow, 255 - r.astype(np.uint16) * 255 // bg, 255)
     # one word per pixel zeroes rgb and alpha together; a masked store on the rgb view is 30x slower
     px.reshape(h, w, 4).view(np.uint32)[..., 0][shadow] = 0  # black shadow, premultiplied
-    # r * 255 overflows a byte where the pointer is not: uint16 holds it, where() discards it
-    px[..., 3] = np.where(shadow, 255 - r.astype(np.uint16) * 255 // bg, 255)
+    px[..., 3] = alpha
     return px
 
 
