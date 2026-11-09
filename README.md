@@ -15,7 +15,13 @@ flick towards an item, or type to search every command and installed app.
 Then press Ctrl+Alt+Space. `builauncher uninstall` removes the login entries. Run `install`
 from an installed copy, not from `uvx`: the environment `uvx` makes is temporary.
 
+
 ## Use
+
+Gestures:
+* **Trigger-hold:** press and hold the trigger key; the pie opens; drift toward a command and pause - the submenu(if there's one) will open; release and whatever's highlighted will execute. Reduce the dwell delay in config for a faster experience.
+
+* **Drag:** left-click empty space and drag; pause on a sector to open its submenu; release there keeps it, or flick to pick.
 
 | Input | Result |
 | --- | --- |
@@ -50,7 +56,7 @@ copy `builauncher/default-windows.toml` to `%APPDATA%\builauncher\menu.toml`.
     shortcut = "CTRL+ALT+space"   # asked for at the first start
     scale = 1.0                   # size of the pie and the search
     apps = true                   # also search installed apps
-    dwell = 0.3                   # seconds a drag waits on a submenu or Back before it opens
+    dwell = 0.4                   # seconds a drag waits still on a submenu or Back before it opens
 
     [[item]]
     name = "Terminal"

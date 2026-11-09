@@ -39,6 +39,7 @@ MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModi
 FRAME_MS = 16
 HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
 DRAG_PX = 15  # px of drag before a release picks instead of clicks
+DWELL_MOVE_PX = 4  # px of pointer travel that restarts a dwell wait: only stillness counts
 FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # fade durations; also between pie and search
 ENTER_WAIT_MS = 150  # Wayland: no pointer enter by then (pointer not over the screen), centre it
 # LayerShellQt::Window: all four anchors (full screen), overlay layer, exclusive keyboard
@@ -139,7 +140,7 @@ class Overlay(QWidget):
 
     def summon(self) -> None:
         self._shown_at, self._keys, self._stroke, self._pressed_at = time.monotonic(), set(), None, None
-        self._picked, self._dwell_cb = False, None
+        self._picked, self._dwell_cb, self._dwell_at = False, None, None
         self._dwell.stop()  # a drag's dwell wait does not survive a reopen
         self._fade_at, self._fading_out = self._shown_at, False
         self._launcher.reset()
@@ -224,7 +225,10 @@ class Overlay(QWidget):
     def _at(self, e: QMouseEvent) -> tuple[int, int]:
         self._put(e.position())  # a motion with no enter before it
         p = (e.position() - self._origin) * self._dpr
-        return round(p.x()), round(p.y())
+        w, h = self._launcher.size
+        # the pointer may leave BUI's raster (the menu is a small region of the overlay), but BUI
+        # drops motions beyond its window and would light nothing while a stroke is out there
+        return round(min(max(p.x(), 0), w - 1)), round(min(max(p.y(), 0), h - 1))
 
     def _mods(self, e) -> int:
         held = sum(bit for mod, bit in MODS if e.modifiers() & mod)
@@ -270,19 +274,24 @@ class Overlay(QWidget):
         return self._pressed_at is not None or self._holding
 
     def _drag(self, at: tuple[int, int]) -> None:
-        """In a stroke: waiting on a submenu or Back readies its pick."""
+        """In a stroke: waiting still on a submenu or Back readies its pick."""
         pick = self._launcher.drag_pick(*at) if self._stroking else None
-        self._dwell_at = at
-        if pick is self._dwell_cb:  # still on the same item: the wait goes on
-            return
-        self._dwell_cb = pick
-        (self._dwell.stop if pick is None else self._dwell.start)()
+        # travel since the wait's anchor (not per event: a slow drift must not fire mid-move)
+        moved = self._dwell_at is not None and math.dist(at, self._dwell_at) > DWELL_MOVE_PX
+        if pick is not self._dwell_cb or moved:  # a new item, or real travel: (re)start the wait
+            self._dwell_cb = pick
+            self._dwell_at = at  # the anchor: travel is measured from here until the next reset
+            (self._dwell.stop if pick is None else self._dwell.start)()
 
     def _dwell_pick(self) -> None:
-        """A stroke waited on a submenu or Back: make the pick, the stroke continues in the new pie."""
+        """A stroke waited still on a submenu or Back: make the pick once its highlight is drawn."""
         pick, self._dwell_cb = self._dwell_cb, None
         if pick is None or not self._stroking or pick is not self._launcher.drag_pick(*self._dwell_at):
             return  # the pointer left, or the menu changed under it
+        self._launcher.app.ctx.motion(*self._dwell_at, 0)  # BUI tracks the pointer: re-light the item
+        self._launcher.app.render_raster(*self._launcher.size)  # and draw it before the pick lands
+        if pick is not self._launcher.drag_pick(*self._dwell_at):
+            return  # the freshly lit item is not the one we waited on
         pick()
         if self._pressed_at is not None:  # a button stroke restarts at the pick; a trigger's has no press
             self._pressed_at = self._dwell_at

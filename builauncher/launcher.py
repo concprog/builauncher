@@ -20,6 +20,8 @@ ROWS = 6  # results below the pie centre fit in the window's lower half
 WIDTH, SEARCH_HEIGHT, PIE_HEIGHT = 24, 2, 15
 Entry = tuple[str, Action]  # (menu path or "App", action)
 FLICK, DEAD_ZONE = 2, 1.5  # kit units: shortest stroke that picks; centre click radius
+# BUI's pie slots per item index (kit_menus.c g_pie_rdir/g_pie_angle), y-down degrees: W E S N NW NE SW SE
+SLOTS = (180, 0, 90, -90, -135, -45, 135, 45)
 
 
 class QueryField(SearchField):
@@ -80,18 +82,12 @@ class Launcher:
         self.app.ctx.focus_node(self.field)
 
     def flick(self, start: tuple[int, int], at: tuple[int, int]) -> bool:
-        """Pick the pie item under the pointer, else the one its direction from the centre
-        highlights, if a real stroke moved: marking mode. False if none."""
-        if not self.app.ctx.popup_count():
-            return False
-        cx, cy = self._center
-        rows = self.app.ctx.menu_rows(-1)
-        hit = next((r for _, r in rows if r[0] <= at[0] < r[0] + r[2] and r[1] <= at[1] < r[1] + r[3]), None)
-        if hit is None and math.dist(at, start) < FLICK * buipy.kit_unit():
-            return False  # no lit item and a mere twitch of a stroke
-        aim = math.atan2(at[1] - cy, at[0] - cx)
-        x, y, w, h = hit or min((r for _, r in rows), key=lambda r: abs(
-            math.remainder(math.atan2(r[1] + r[3] / 2 - cy, r[0] + r[2] / 2 - cx) - aim, math.tau)))
+        """Pick the item highlighted at the pointer, if a real stroke moved for a direction
+        pick: marking mode. False if none."""
+        hot = self.hot(*at)
+        if hot is None or (not hot[1] and math.dist(at, start) < FLICK * buipy.kit_unit()):
+            return False  # nothing is lit, or a direction guess on a mere twitch of a stroke
+        x, y, w, h = self.app.ctx.menu_rows(-1)[hot[0]][1]
         self.app.ctx.press(x + w // 2, y + h // 2, 8)
         self.app.ctx.release(x + w // 2, y + h // 2, 0)
         return True
@@ -101,13 +97,30 @@ class Launcher:
         near = math.dist((x, y), self._center) < DEAD_ZONE * buipy.kit_unit()
         (self._back if near and self.app.ctx.popup_count() else self._close)()
 
-    def drag_pick(self, x: int, y: int) -> Callable[[], None] | None:
-        """The pick at (x, y) a drag dwell may make: a submenu or Back; None on an Action."""
+    def hot(self, x: int, y: int) -> tuple[int, bool] | None:
+        """The pie item highlighted at (x, y): the item under the pointer, else the one the
+        pointer's direction from the centre lights — BUI keeps it lit far beyond the radius.
+        (index, pointer on the item's rect); None when nothing is lit: no pie, or the dead zone."""
         if not self.app.ctx.popup_count():
             return None
-        hit = zip(self.app.ctx.menu_rows(-1), self._drags)
-        return next((pick for (_, (rx, ry, rw, rh)), pick in hit
-                     if rx <= x < rx + rw and ry <= y < ry + rh), None)
+        rows = [r for _, r in self.app.ctx.menu_rows(-1)]
+        on_rect = next(((i, r) for i, r in enumerate(rows)
+                        if r[0] <= x < r[0] + r[2] and r[1] <= y < r[1] + r[3]), None)
+        if on_rect:
+            return on_rect[0], True
+        cx, cy = self._center
+        if math.dist((x, y), (cx, cy)) < DEAD_ZONE * buipy.kit_unit():
+            return None  # the centre's dead zone lights nothing
+        # BUI lights the item whose slot direction the pointer is on (g_pie_rdir/g_pie_angle):
+        # one atan2 against a constant table, no per-item trig
+        aim = math.degrees(math.atan2(y - cy, x - cx))
+        i = min(range(len(rows)), key=lambda i: abs(math.remainder(aim - SLOTS[i], 360)))
+        return i, False
+
+    def drag_pick(self, x: int, y: int) -> Callable[[], None] | None:
+        """The pick a drag dwell may make on the highlighted item: a submenu or Back; None on an Action."""
+        hot = self.hot(x, y)
+        return None if hot is None else self._drags[hot[0]]
 
     def open_pie(self, path: tuple[Menu, ...] = ()) -> None:
         """Open the last sub-menu in path, or the root when path is empty."""

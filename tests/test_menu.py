@@ -21,13 +21,13 @@ def test_default_config_loads():
     paths = {f"{p}:{a.name}" for p, a in actions(cfg.menu)}
     assert ":Terminal" in paths
     assert "System / Power:Reboot" in paths
-    assert cfg.dwell == 0.3
+    assert cfg.dwell == 0.4
 
 
 def test_dwell_config(tmp_path):
     f = tmp_path / "menu.toml"
     f.write_text('[[item]]\nname = "t"\nexec = "t"\n')
-    assert load(f).dwell == 0.3  # no dwell in the file: the default
+    assert load(f).dwell == 0.4  # no dwell in the file: the default
     f.write_text('dwell = 0.5\n[[item]]\nname = "t"\nexec = "t"\n')  # a root key: before [[item]]
     assert load(f).dwell == 0.5
     for bad in ("0.04", "2.1", "-1"):
@@ -128,8 +128,14 @@ def test_drag_pick():
         assert not launcher.drag_pick(*centre("Terminal"))  # an Action must not run from a drag
         assert launcher.drag_pick(*centre("System"))  # a sub-pie may open from a drag
         assert rows() == ["Search", "Terminal", "Browser", "Files", "Media", "System"]  # but only a dwell does
+        cx, cy = launcher._center
+        out = lambda t: next((round(cx + 1.5 * (x + w / 2 - cx)), round(cy + 1.5 * (y + h / 2 - cy)))
+                             for s, (x, y, w, h) in launcher.app.ctx.menu_rows(-1) if s == t)
+        assert launcher.drag_pick(*out("System"))  # beyond the pie radius the direction still lights it
+        assert not launcher.drag_pick(*out("Terminal"))  # an Action stays release-only out here too
         launcher.drag_pick(*centre("System"))()
         assert rows() == ["Back", "Lock", "Suspend", "Power"]
+        assert launcher.drag_pick(*out("Back"))  # so does Back: the stroke may leave the pie entirely
         launcher.drag_pick(*centre("Back"))()
         assert rows()[0] == "Search"
         launcher.search_only()

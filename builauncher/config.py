@@ -10,7 +10,7 @@ from .system import WINDOWS, config_dir
 DEFAULT = Path(__file__).with_name("default-windows.toml" if WINDOWS else "default.toml")
 SHORTCUT = "CTRL+ALT+space"  # XDG shortcuts format
 SCALE = 1.0  # BUI ui scale; 1 is Blender's default
-DWELL = 0.3  # s a drag waits on a submenu or Back before it opens
+DWELL = 0.4  # s a drag waits still on a submenu or Back before it opens
 
 
 @dataclass(frozen=True, slots=True)
