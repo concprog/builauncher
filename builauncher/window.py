@@ -39,7 +39,7 @@ MODS = ((Qt.KeyboardModifier.ShiftModifier, 1), (Qt.KeyboardModifier.ControlModi
 FRAME_MS = 16
 HOLD_S, DOUBLE_S = 0.2, 0.4  # hold: Blender U.pie_tap_timeout; a second trigger sooner is a double tap
 DRAG_PX = 15  # px of drag before a release picks instead of clicks
-DWELL_MOVE_PX = 4  # px of pointer travel that restarts a dwell wait: only stillness counts
+DWELL_MOVE_PX = 8  # px of pointer travel that restarts a dwell wait: only stillness counts
 FADE_IN_S, FADE_OUT_S = 0.15, 0.1  # fade durations; also between pie and search
 ENTER_WAIT_MS = 150  # Wayland: no pointer enter by then (pointer not over the screen), centre it
 # LayerShellQt::Window: all four anchors (full screen), overlay layer, exclusive keyboard
@@ -121,6 +121,7 @@ class Overlay(QWidget):
         self._stroke: tuple[tuple[int, int], tuple[int, int]] | None = None  # first and last pointer
         self._pressed_at: tuple[int, int] | None = None
         self._holding = False  # the trigger key is down: a stroke of motion, no button
+        self._trigger_at: float | None = None  # when the live trigger hold began on an open pie
         self._picked = False  # the stroke's last act was a dwell pick: a release then keeps the new pie
         self._dwell_at: tuple[int, int] | None = None  # the pointer in the drag, for the dwell pick
         self._dwell_cb: Callable[[], None] | None = None  # the pick the dwell wait is for
@@ -131,16 +132,18 @@ class Overlay(QWidget):
 
     def trigger(self) -> None:
         """The global shortcut fired (pressed: a stroke of motion starts, no button)."""
+        if self._holding:
+            return  # a held trigger's auto-repeat: the stroke continues, the pie stays
         self._holding = True
         if not self.isVisible() or self._fading_out:
             return self.summon()
         if time.monotonic() - self._shown_at < DOUBLE_S:
             return self._launcher.search_only()
-        self.dismiss()
+        self._trigger_at = time.monotonic()  # a stroke on the open pie; a bare tap closes at release
 
     def summon(self) -> None:
         self._shown_at, self._keys, self._stroke, self._pressed_at = time.monotonic(), set(), None, None
-        self._picked, self._dwell_cb, self._dwell_at = False, None, None
+        self._picked, self._dwell_cb, self._dwell_at, self._trigger_at = False, None, None, None
         self._dwell.stop()  # a drag's dwell wait does not survive a reopen
         self._fade_at, self._fading_out = self._shown_at, False
         self._launcher.reset()
@@ -268,14 +271,9 @@ class Overlay(QWidget):
         self._drag(at)
         self._refresh()
 
-    @property
-    def _stroking(self) -> bool:
-        """A stroke is live: a button drag from empty space, or a held trigger's motion."""
-        return self._pressed_at is not None or self._holding
-
     def _drag(self, at: tuple[int, int]) -> None:
-        """In a stroke: waiting still on a submenu or Back readies its pick."""
-        pick = self._launcher.drag_pick(*at) if self._stroking else None
+        """The pointer resting on a submenu or Back readies its pick: in a stroke or a mere hover."""
+        pick = None if self._fading_out else self._launcher.drag_pick(*at)
         # travel since the wait's anchor (not per event: a slow drift must not fire mid-move)
         moved = self._dwell_at is not None and math.dist(at, self._dwell_at) > DWELL_MOVE_PX
         if pick is not self._dwell_cb or moved:  # a new item, or real travel: (re)start the wait
@@ -284,18 +282,19 @@ class Overlay(QWidget):
             (self._dwell.stop if pick is None else self._dwell.start)()
 
     def _dwell_pick(self) -> None:
-        """A stroke waited still on a submenu or Back: make the pick once its highlight is drawn."""
+        """The pointer waited still on a submenu or Back: make the pick once its highlight is drawn."""
         pick, self._dwell_cb = self._dwell_cb, None
-        if pick is None or not self._stroking or pick is not self._launcher.drag_pick(*self._dwell_at):
+        if pick is None or pick is not self._launcher.drag_pick(*self._dwell_at):
             return  # the pointer left, or the menu changed under it
         self._launcher.app.ctx.motion(*self._dwell_at, 0)  # BUI tracks the pointer: re-light the item
         self._launcher.app.render_raster(*self._launcher.size)  # and draw it before the pick lands
         if pick is not self._launcher.drag_pick(*self._dwell_at):
             return  # the freshly lit item is not the one we waited on
         pick()
-        if self._pressed_at is not None:  # a button stroke restarts at the pick; a trigger's has no press
-            self._pressed_at = self._dwell_at
-        self._stroke, self._picked = None, True
+        if self._pressed_at is not None:  # a button stroke restarts at the pick; a hover or a
+            self._pressed_at = self._dwell_at  # trigger's hold has no press: no release will come
+            self._picked = True                # to keep the pie, the pick itself already did
+        self._stroke = None  # the release after the pick must not re-pick it as a flick
 
     def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
         alt_f4 = e.key() == Qt.Key.Key_F4 and e.modifiers() & Qt.KeyboardModifier.AltModifier
@@ -316,12 +315,15 @@ class Overlay(QWidget):
         self._refresh()
 
     def release(self) -> None:
-        """The trigger was released. After a hold, pick towards the pointer."""
+        """The trigger was released. After a hold, pick towards the pointer; a bare tap closes."""
+        now = time.monotonic()
+        began, stroke, self._trigger_at, self._stroke = self._trigger_at, self._stroke, None, None
         self._holding = False
-        if self.isVisible() and self._stroke and time.monotonic() - self._shown_at >= HOLD_S:
-            self._launcher.flick(*self._stroke)
+        if self.isVisible() and stroke and now - self._shown_at >= HOLD_S:
+            self._launcher.flick(*stroke)
             self._refresh()
-        self._stroke = None
+        if began and now - began < HOLD_S:
+            self.dismiss()  # a bare tap on an open pie closes it: no stroke happened in between
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:  # noqa: N802
         if e.isAutoRepeat() or e.key() in self._keys:
